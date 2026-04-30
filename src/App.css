@@ -1,0 +1,19 @@
+/* === STELE — EGREGORE COMPILER === */
+:root {
+  --cipher:#1a1714;--cipher-raised:#201d19;--surface:#242019;--surface-raised:#2c2820;
+  --vellum:#f4f0e8;--vellum-dim:rgba(244,240,232,0.58);--vellum-faint:rgba(244,240,232,0.28);
+  --teal:#2d7a6e;--teal-bright:#5ccfcf;--gold:#a8862a;--gold-bright:#c9a83c;
+  --coral:#f07178;--border-color:rgba(244,240,232,0.10);
+  --heading-font:"Cormorant Garamond",Georgia,serif;
+  --mono-font:"Martian Mono","Courier New",monospace;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--cipher);color:var(--vellum);font-family:var(--heading-font);-webkit-font-smoothing:antialiased}
+::-webkit-scrollbar{width:3px;height:3px}
+::-webkit-scrollbar-track{background:var(--cipher)}
+::-webkit-scrollbar-thumb{background:var(--teal);border-radius:2px}
+button{font-family:inherit}
+textarea,select,input{font-family:inherit;outline:none}
+textarea:focus,select:focus,input:focus{border-color:var(--teal)!important;box-shadow:0 0 0 1px var(--teal)}
+button:hover{opacity:0.88}
+button:disabled{opacity:0.3!important;cursor:not-allowed!important}
