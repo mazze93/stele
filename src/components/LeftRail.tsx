@@ -1,8 +1,14 @@
 import { PROJECTS, POSTURE_META } from '@/data/projects'
 import { SESSION_PRESETS } from '@/data/defaults'
 import type { DirectiveState, SessionMode, OutputTarget } from '@/lib/types'
+import type { GateResult } from '@/lib/security'
 
-type Props = { state: DirectiveState; onChange: (n: DirectiveState) => void; onApplyPreset: (m: SessionMode) => void }
+type Props = {
+  state: DirectiveState
+  onChange: (n: DirectiveState) => void
+  onApplyPreset: (m: SessionMode) => void
+  onGateResult?: (r: GateResult) => void
+}
 const MODES: SessionMode[] = ['PLAN','BUILD','REVIEW','CAPTURE']
 const TARGETS: { id: OutputTarget; label: string; hint: string }[] = [
   { id:'claude-ai',         label:'claude.ai instructions', hint:'Paste into Settings › Instructions' },
@@ -10,7 +16,7 @@ const TARGETS: { id: OutputTarget; label: string; hint: string }[] = [
   { id:'claude-md-project', label:'CLAUDE.md project',      hint:'Save to <project-root>/CLAUDE.md' },
 ]
 
-export function LeftRail({ state, onChange, onApplyPreset }: Props) {
+export function LeftRail({ state, onChange, onApplyPreset, onGateResult: _onGateResult }: Props) {
   function toggleProject(id: string) {
     const next = state.activeProjectIds.includes(id)
       ? state.activeProjectIds.filter(p => p !== id)

@@ -112,22 +112,10 @@ export const PROJECTS: Project[] = [
     ],
     tesserae: [
       {
-        id: 'T-001',
-        module: 'escalate() in src/lib/integrity.ts',
-        missingHalf: 'call site in App.tsx / state update handler on TOBIRA fire',
-        group: 2,
-      },
-      {
         id: 'T-002',
         module: 'scanPasteInput() in src/lib/tripwires.ts',
         missingHalf: 'call site in InheritPanel paste handler (Group 4)',
         blockedBy: 'security.ts and extraction-schema.ts must exist first (Group 1)',
-        group: 2,
-      },
-      {
-        id: 'T-003',
-        module: 'appendEntry() in src/lib/audit.ts',
-        missingHalf: 'call sites at every integrityState transition in App.tsx',
         group: 2,
       },
       {
@@ -150,18 +138,6 @@ export const PROJECTS: Project[] = [
         missingHalf: 'import and call in extractor.ts on API response payload before validatePatch()',
         blockedBy: 'extractor.ts does not exist yet (Group 4)',
         group: 4,
-      },
-      {
-        id: 'T-007',
-        module: 'gate() recommendedTransition: IntegrityState in src/lib/security.ts',
-        missingHalf: 'Group 2 callers must treat ZANSHIN return as "no change" not "de-escalate"; type should be StateTransition | null',
-        group: 2,
-      },
-      {
-        id: 'T-008',
-        module: 'EPOCHÉ lockout screen in App.tsx',
-        missingHalf: 'display fired TOBIRA IDs + messages before reset so diagnostic evidence survives the wipe',
-        group: 3,
       },
       {
         id: 'T-009',

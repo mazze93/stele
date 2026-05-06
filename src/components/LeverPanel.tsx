@@ -2,6 +2,7 @@ import { useState } from 'react'
 import type { DirectiveState } from '@/lib/types'
 import type { ThemeId } from '@/data/themes'
 import type { IntegrityState } from '@/lib/integrity'
+import type { AuditTrail } from '@/lib/audit'
 import { FormatPanel }     from './panels/FormatPanel'
 import { EscalationPanel } from './panels/EscalationPanel'
 import { QuestionsPanel }  from './panels/QuestionsPanel'
@@ -18,8 +19,8 @@ const TABS: { id: Tab; label: string }[] = [
   { id:'theme',      label:'Theme'      },
   { id:'utsuroi',    label:'歪 UTSUROI' },
 ]
-type Props = { state: DirectiveState; onChange: (n: DirectiveState) => void }
-export function LeverPanel({ state, onChange }: Props) {
+type Props = { state: DirectiveState; onChange: (n: DirectiveState) => void; auditTrail: AuditTrail }
+export function LeverPanel({ state, onChange, auditTrail }: Props) {
   const [activeTab, setActiveTab] = useState<Tab>('format')
   const badges: Partial<Record<Tab, string>> = {
     questions:  state.openQuestions.length > 0 ? String(state.openQuestions.length) : undefined,
@@ -47,7 +48,7 @@ export function LeverPanel({ state, onChange }: Props) {
         {activeTab === 'questions'  && <QuestionsPanel  state={state} onChange={onChange} />}
         {activeTab === 'append'     && <AppendPanel     state={state} onChange={onChange} />}
         {activeTab === 'theme'      && <ThemePanel activeThemeId={state.themeId as ThemeId} onChange={(id) => onChange({...state,themeId:id})} />}
-        {activeTab === 'utsuroi'    && <UtsuroiPanel state={state} integrityState={state.integrityState as IntegrityState} firedTobiraIds={state.firedTobiraIds} />}
+        {activeTab === 'utsuroi'    && <UtsuroiPanel state={state} integrityState={state.integrityState as IntegrityState} firedTobiraIds={state.firedTobiraIds} auditTrail={auditTrail} />}
       </div>
     </div>
   )

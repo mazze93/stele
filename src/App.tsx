@@ -1,9 +1,13 @@
-import { useState } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import type { DirectiveState, SessionMode } from '@/lib/types'
 import type { IntegrityState } from '@/lib/integrity'
 import type { ThemeId } from '@/data/themes'
 import { buildDefaultState, applySessionPreset } from '@/data/defaults'
-import { INTEGRITY_STATES } from '@/lib/integrity'
+import { INTEGRITY_STATES, escalate, integrityHash } from '@/lib/integrity'
+import { createAuditTrail, appendEntry } from '@/lib/audit'
+import type { AuditTrail } from '@/lib/audit'
+import type { GateResult } from '@/lib/security'
+import { TOBIRA_REGISTRY } from '@/lib/tripwires'
 import { useIsMobile } from '@/hooks/useIsMobile'
 import { useTheme } from '@/hooks/useTheme'
 import { LeftRail } from '@/components/LeftRail'
@@ -11,6 +15,11 @@ import { LeverPanel } from '@/components/LeverPanel'
 import { OutputPanel } from '@/components/OutputPanel'
 import { MobileConfig } from '@/components/MobileConfig'
 import './App.css'
+
+function buildSession() {
+  const state = buildDefaultState()
+  return { state, audit: createAuditTrail(state.sessionId) }
+}
 
 type MobileTab = 'config' | 'levers' | 'output'
 const MOBILE_TABS: { id: MobileTab; label: string; icon: string }[] = [
@@ -20,13 +29,63 @@ const MOBILE_TABS: { id: MobileTab; label: string; icon: string }[] = [
 ]
 
 export default function App() {
-  const [state, setState]         = useState<DirectiveState>(buildDefaultState)
-  const [mobileTab, setMobileTab] = useState<MobileTab>('config')
-  const isMobile                  = useIsMobile()
-  const integrity                 = INTEGRITY_STATES[state.integrityState as IntegrityState]
+  const [session]                   = useState(buildSession)
+  const [state, setState]           = useState<DirectiveState>(session.state)
+  const [auditTrail, setAuditTrail] = useState<AuditTrail>(session.audit)
+  const [mobileTab, setMobileTab]   = useState<MobileTab>('config')
+  const isMobile                    = useIsMobile()
+  const integrity                   = INTEGRITY_STATES[state.integrityState as IntegrityState]
+  const sessionStarted              = useRef(false)
   useTheme(state.themeId as ThemeId)
 
+  useEffect(() => {
+    if (sessionStarted.current) return          // StrictMode second-fire guard
+    sessionStarted.current = true               // set before any state call or async boundary
+    setAuditTrail(t => appendEntry(t, 'session-start', {
+      integrityHash: integrityHash('ZANSHIN', session.state.sessionId, 0),
+    }))
+  }, [])  // eslint-disable-line react-hooks/exhaustive-deps
+
   function applyPreset(mode: SessionMode) { setState(prev => applySessionPreset(prev, mode)) }
+
+  function handleGateResult(gateResult: GateResult) {
+    const { scanResult, recommendedTransition } = gateResult
+    if (!recommendedTransition) return  // clean input — latching invariant, no de-escalation
+
+    const currentIntegrity = state.integrityState as IntegrityState
+    const nextIntegrity    = escalate(currentIntegrity, recommendedTransition)
+    const nextFiredIds     = [...new Set([...state.firedTobiraIds, ...scanResult.fired.map(t => t.id)])]
+    const hash             = integrityHash(nextIntegrity, state.sessionId, 0)
+
+    // Snapshot invariant: use nextIntegrity everywhere below — never state.integrityState
+    setState(prev => ({ ...prev, integrityState: nextIntegrity, firedTobiraIds: nextFiredIds }))
+
+    setAuditTrail(trail => {
+      let t = trail
+      for (const tobira of scanResult.fired) {
+        t = appendEntry(t, 'tobira-fired', {
+          tobiraId: tobira.id,
+          tobiraCode: tobira.auditCode,
+          integrityHash: hash,
+          secretsDetected: scanResult.secretsDetected,
+        })
+      }
+      if (nextIntegrity !== currentIntegrity) {
+        t = appendEntry(t, nextIntegrity === 'EPOCHÉ' ? 'epoche-entered' : 'utsuroi-transition', {
+          fromState: currentIntegrity,
+          toState: nextIntegrity,
+          integrityHash: hash,
+        })
+      }
+      return { ...t, currentState: nextIntegrity }
+    })
+  }
+
+  function handleReset() {
+    const newState = buildDefaultState()
+    setState(newState)
+    setAuditTrail(createAuditTrail(newState.sessionId))
+  }
 
   function handleMobileConfigChange(next: DirectiveState) {
     const justGotFirstProject = state.activeProjectIds.length === 0 && next.activeProjectIds.length > 0
@@ -36,6 +95,10 @@ export default function App() {
 
   // EPOCHÉ: entire UI enters lockout — only reset path available
   if (state.integrityState === 'EPOCHÉ') {
+    const firedTobira = state.firedTobiraIds.map(id =>
+      TOBIRA_REGISTRY.find(t => t.id === id)
+      ?? { auditCode: 'UNKNOWN', message: 'Unregistered integrity exception.' }
+    )
     return (
       <div style={{ display:'flex', flexDirection:'column', height:'100dvh', background:integrity.colorDim, color:integrity.color, alignItems:'center', justifyContent:'center', padding:'40px', textAlign:'center', gap:'24px' }}>
         <div style={{ fontSize:'48px', fontFamily:'serif' }}>{integrity.glyph}</div>
@@ -45,12 +108,20 @@ export default function App() {
           The egregore is suspended — not destroyed. ZANSHIN is recoverable.<br />
           Only a deliberate reset restores clean state.
         </div>
-        <button onClick={() => setState(buildDefaultState())}
+        {firedTobira.length > 0 && (
+          <div style={{ fontFamily:'var(--mono-font)', fontSize:'9px', color:'rgba(200,80,128,0.7)', maxWidth:'480px', textAlign:'left', display:'flex', flexDirection:'column', gap:'4px', padding:'12px 16px', border:'1px solid rgba(200,80,128,0.3)', borderRadius:'4px', background:'rgba(200,80,128,0.06)', width:'100%' }}>
+            <div style={{ letterSpacing:'0.1em', marginBottom:'6px', color:'rgba(200,80,128,0.5)', fontSize:'8px' }}>TOBIRA FIRED THIS SESSION</div>
+            {firedTobira.map((t, i) => (
+              <div key={i}>[{t.auditCode}] {t.message}</div>
+            ))}
+          </div>
+        )}
+        <button onClick={handleReset}
           style={{ padding:'12px 32px', background:'transparent', border:`1px solid ${integrity.color}`, borderRadius:'4px', cursor:'pointer', fontFamily:'var(--mono-font)', fontSize:'12px', color:integrity.color, letterSpacing:'0.1em', touchAction:'manipulation' }}>
           RESET — restore ZANSHIN
         </button>
         <div style={{ fontFamily:'var(--mono-font)', fontSize:'9px', color:'rgba(200,80,128,0.4)', marginTop:'8px' }}>
-          session: {state.sessionId} · {state.firedTobiraIds.length} TOBIRA fired
+          session: {state.sessionId} · {state.firedTobiraIds.length} TOBIRA fired · {auditTrail.entries.length} audit entries
         </div>
       </div>
     )
@@ -69,6 +140,9 @@ export default function App() {
           {state.firedTobiraIds.length > 0 && (
             <span style={{ fontFamily:'var(--mono-font)', fontSize:'8px', color:integrity.color, borderLeft:`1px solid ${integrity.color}`, paddingLeft:'8px' }}>{state.firedTobiraIds.length} TOBIRA</span>
           )}
+          {auditTrail.entries.length > 0 && (
+            <span style={{ fontFamily:'var(--mono-font)', fontSize:'8px', color:integrity.color, borderLeft:`1px solid ${integrity.color}`, paddingLeft:'8px', opacity:0.7 }}>{auditTrail.entries.length} ◈</span>
+          )}
         </div>
         {!isMobile && <StatusChips state={state} />}
       </header>
@@ -77,13 +151,13 @@ export default function App() {
         {isMobile ? (
           <div style={{ flex:1, overflow:'hidden' }}>
             {mobileTab==='config' && <div style={{ height:'100%', overflowY:'auto' }}><MobileConfig state={state} onChange={handleMobileConfigChange} onApplyPreset={applyPreset} /></div>}
-            {mobileTab==='levers' && <div style={{ height:'100%', display:'flex', flexDirection:'column', overflow:'hidden' }}><LeverPanel state={state} onChange={setState} /></div>}
+            {mobileTab==='levers' && <div style={{ height:'100%', display:'flex', flexDirection:'column', overflow:'hidden' }}><LeverPanel state={state} onChange={setState} auditTrail={auditTrail} /></div>}
             {mobileTab==='output' && <div style={{ height:'100%', display:'flex', flexDirection:'column', overflow:'hidden' }}><OutputPanel state={state} fullWidth /></div>}
           </div>
         ) : (
           <>
-            <LeftRail state={state} onChange={setState} onApplyPreset={applyPreset} />
-            <LeverPanel state={state} onChange={setState} />
+            <LeftRail state={state} onChange={setState} onApplyPreset={applyPreset} onGateResult={handleGateResult} />
+            <LeverPanel state={state} onChange={setState} auditTrail={auditTrail} />
             <OutputPanel state={state} />
           </>
         )}
