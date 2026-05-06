@@ -1,9 +1,13 @@
-import { useState } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import type { DirectiveState, SessionMode } from '@/lib/types'
 import type { IntegrityState } from '@/lib/integrity'
 import type { ThemeId } from '@/data/themes'
 import { buildDefaultState, applySessionPreset } from '@/data/defaults'
-import { INTEGRITY_STATES } from '@/lib/integrity'
+import { INTEGRITY_STATES, escalate, integrityHash } from '@/lib/integrity'
+import { createAuditTrail, appendEntry } from '@/lib/audit'
+import type { AuditTrail } from '@/lib/audit'
+import type { GateResult } from '@/lib/security'
+import { TOBIRA_REGISTRY } from '@/lib/tripwires'
 import { useIsMobile } from '@/hooks/useIsMobile'
 import { useTheme } from '@/hooks/useTheme'
 import { LeftRail } from '@/components/LeftRail'
@@ -11,6 +15,11 @@ import { LeverPanel } from '@/components/LeverPanel'
 import { OutputPanel } from '@/components/OutputPanel'
 import { MobileConfig } from '@/components/MobileConfig'
 import './App.css'
+
+function buildSession() {
+  const state = buildDefaultState()
+  return { state, audit: createAuditTrail(state.sessionId) }
+}
 
 type MobileTab = 'config' | 'levers' | 'output'
 const MOBILE_TABS: { id: MobileTab; label: string; icon: string }[] = [
@@ -20,13 +29,63 @@ const MOBILE_TABS: { id: MobileTab; label: string; icon: string }[] = [
 ]
 
 export default function App() {
-  const [state, setState]         = useState<DirectiveState>(buildDefaultState)
-  const [mobileTab, setMobileTab] = useState<MobileTab>('config')
-  const isMobile                  = useIsMobile()
-  const integrity                 = INTEGRITY_STATES[state.integrityState as IntegrityState]
+  const [session]                   = useState(buildSession)
+  const [state, setState]           = useState<DirectiveState>(session.state)
+  const [auditTrail, setAuditTrail] = useState<AuditTrail>(session.audit)
+  const [mobileTab, setMobileTab]   = useState<MobileTab>('config')
+  const isMobile                    = useIsMobile()
+  const integrity                   = INTEGRITY_STATES[state.integrityState as IntegrityState]
+  const sessionStarted              = useRef(false)
   useTheme(state.themeId as ThemeId)
 
+  useEffect(() => {
+    if (sessionStarted.current) return          // StrictMode second-fire guard
+    sessionStarted.current = true               // set before any state call or async boundary
+    setAuditTrail(t => appendEntry(t, 'session-start', {
+      integrityHash: integrityHash('ZANSHIN', session.state.sessionId, 0),
+    }))
+  }, [])  // eslint-disable-line react-hooks/exhaustive-deps
+
   function applyPreset(mode: SessionMode) { setState(prev => applySessionPreset(prev, mode)) }
+
+  function handleGateResult(gateResult: GateResult) {
+    const { scanResult, recommendedTransition } = gateResult
+    if (!recommendedTransition) return  // clean input — latching invariant, no de-escalation
+
+    const currentIntegrity = state.integrityState as IntegrityState
+    const nextIntegrity    = escalate(currentIntegrity, recommendedTransition)
+    const nextFiredIds     = [...new Set([...state.firedTobiraIds, ...scanResult.fired.map(t => t.id)])]
+    const hash             = integrityHash(nextIntegrity, state.sessionId, 0)
+
+    // Snapshot invariant: use nextIntegrity everywhere below — never state.integrityState
+    setState(prev => ({ ...prev, integrityState: nextIntegrity, firedTobiraIds: nextFiredIds }))
+
+    setAuditTrail(trail => {
+      let t = trail
+      for (const tobira of scanResult.fired) {
+        t = appendEntry(t, 'tobira-fired', {
+          tobiraId: tobira.id,
+          tobiraCode: tobira.auditCode,
+          integrityHash: hash,
+          secretsDetected: scanResult.secretsDetected,
+        })
+      }
+      if (nextIntegrity !== currentIntegrity) {
+        t = appendEntry(t, nextIntegrity === 'EPOCHÉ' ? 'epoche-entered' : 'utsuroi-transition', {
+          fromState: currentIntegrity,
+          toState: nextIntegrity,
+          integrityHash: hash,
+        })
+      }
+      return { ...t, currentState: nextIntegrity }
+    })
+  }
+
+  function handleReset() {
+    const newState = buildDefaultState()
+    setState(newState)
+    setAuditTrail(createAuditTrail(newState.sessionId))
+  }
 
   function handleMobileConfigChange(next: DirectiveState) {
     const justGotFirstProject = state.activeProjectIds.length === 0 && next.activeProjectIds.length > 0
