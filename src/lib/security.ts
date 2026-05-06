@@ -3,37 +3,35 @@
 // reaches the API or state. This file must exist and be reviewed before
 // InheritPanel, CollaboratorPanel, or extractor.ts are created (Group 4).
 //
-// GROUP 2 WIRING TODO:
-//   - Import and call gate() from InheritPanel paste handler
-//   - Import and call gate() from CollaboratorPanel input handler
-//   - On GateResult.blocked === true, escalate() integrity state and fire TOBIRA
-//   - appendEntry() to audit trail for every gate() call
+// GROUP 4 WIRING: call gate() from InheritPanel/CollaboratorPanel paste handlers.
+// handleGateResult() in App.tsx handles escalate() and appendEntry() on GateResult.
 
 import { scanPasteInput } from './tripwires'
 import { INTEGRITY_STATES } from './integrity'
-import type { IntegrityState } from './integrity'
+import type { IntegrityState, StateTransition } from './integrity'
 import type { ScanResult } from './tripwires'
 
 export type GateResult = {
   blocked: boolean
   scanResult: ScanResult
-  // Recommended state transition — caller decides whether to apply
-  recommendedTransition: IntegrityState
-  // Human-readable summary of findings for UI display
+  recommendedTransition: StateTransition | null  // null = clean input, no transition needed
   findings: string[]
-  // Character count checked — length enforcement
   charCount: number
 }
 
-const MAX_INPUT_CHARS = 8000  // enough for any real project file
+const MAX_INPUT_CHARS = 8000
 
-// gate() — call this before any external input reaches API or state
+// Module-scope: O(1) severity lookup. Never use indexOf() inside loops.
+const ORDER_INDEX: Record<string, number> = Object.fromEntries(
+  (['ZANSHIN', 'UNHEIMLICH', 'WABI', 'EPOCHÉ'] as const).map((s, i) => [s, i])
+)
+
+// gate() — call this before any external input reaches API or state.
 // Returns a GateResult. Never throws — caller decides what to do with the result.
 export function gate(input: string): GateResult {
   const findings: string[] = []
   const charCount = input.length
 
-  // Length cap
   if (charCount > MAX_INPUT_CHARS) {
     return {
       blocked: true,
@@ -45,17 +43,19 @@ export function gate(input: string): GateResult {
   }
 
   const scanResult = scanPasteInput(input)
-
-  // Determine highest severity transition from fired TOBIRA
-  let recommendedTransition: IntegrityState = 'ZANSHIN'
-  const ORDER: IntegrityState[] = ['ZANSHIN', 'UNHEIMLICH', 'WABI', 'EPOCHÉ']
+  let recommendedTransition: StateTransition | null = null
 
   for (const tobira of scanResult.fired) {
-    const idx = ORDER.indexOf(tobira.transition)
-    if (idx > ORDER.indexOf(recommendedTransition)) {
-      recommendedTransition = ORDER[idx]
+    findings.push(`[${tobira.auditCode}] ${tobira.message}`)  // always before any guard
+
+    const incoming = ORDER_INDEX[tobira.transition]
+    if (incoming === undefined) {
+      findings.push('[SYS_ANOMALY] Unrecognized integrity transition — failing closed.')
+      return { blocked: true, scanResult, recommendedTransition: 'EPOCHÉ', findings, charCount }
     }
-    findings.push(`[${tobira.auditCode}] ${tobira.message}`)
+
+    const current = recommendedTransition ? ORDER_INDEX[recommendedTransition] : -1
+    if (incoming > current) recommendedTransition = tobira.transition
   }
 
   if (scanResult.secretsDetected) {
