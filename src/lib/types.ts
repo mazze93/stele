@@ -2,12 +2,14 @@
 // All types for the directive compiler and integrity telemetry tool.
 // The lexicon is load-bearing — see CLAUDE.md for vocabulary constraints.
 
+import type { IntegrityState } from './integrity'
+export type { IntegrityState }
+
 export type Posture = 'MAX' | 'HIGH' | 'CREATIVE' | 'RESEARCH' | 'STANDARD' | 'GUARDIAN'
 export type SessionMode = 'PLAN' | 'BUILD' | 'REVIEW' | 'CAPTURE'
 export type Verbosity = 'dense' | 'standard' | 'expanded'
 export type OutputTarget = 'claude-ai' | 'claude-md-global' | 'claude-md-project'
 export type HygieneTrigger = 'off' | 'on-copy' | 'turn-based' | 'manual'
-export type IntegrityState = 'ZANSHIN' | 'UNHEIMLICH' | 'WABI' | 'EPOCHÉ'
 
 // TESSERA — a module that compiles and exports correctly but whose connection
 // to the live system is dormant. Neither half of the guest-friend bond has

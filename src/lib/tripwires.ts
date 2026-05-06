@@ -205,10 +205,16 @@ export type ScanResult = {
   secretsDetected: boolean   // boolean only — never store what was found
 }
 
-export function scanInput(input: string): ScanResult {
+// TW-001–TW-011: adversarial text detection for user paste content
+const PASTE_IDS = new Set(['TW-001','TW-002','TW-003','TW-004','TW-005','TW-006','TW-007','TW-008','TW-009','TW-010','TW-011'])
+// TW-012–TW-013: schema/density validation for extraction API responses only
+const EXTRACTION_IDS = new Set(['TW-012','TW-013'])
+
+function runScan(input: string, ids: Set<string>): ScanResult {
   const fired: Tobira[] = []
   let secretsDetected = false
   for (const t of TOBIRA_REGISTRY) {
+    if (!ids.has(t.id)) continue
     const matched = t.pattern instanceof RegExp ? t.pattern.test(input) : t.pattern(input)
     if (matched) {
       fired.push(t)
@@ -217,3 +223,9 @@ export function scanInput(input: string): ScanResult {
   }
   return { fired, clean: fired.length === 0, secretsDetected }
 }
+
+// Call from gate() on raw user paste input
+export function scanPasteInput(input: string): ScanResult { return runScan(input, PASTE_IDS) }
+
+// Call from extractor.ts on API response payloads — never on user paste
+export function scanExtractionResponse(input: string): ScanResult { return runScan(input, EXTRACTION_IDS) }

@@ -1,4 +1,5 @@
 import type { DirectiveState, OutputSection, EscalationTrigger, SessionMode } from '@/lib/types'
+import { generateSessionId } from '@/lib/integrity'
 
 export const DEFAULT_SECTIONS: OutputSection[] = [
   { id: 'assumptions', label: 'Assumptions',         enabled: true },
@@ -43,7 +44,7 @@ export function buildDefaultState(): DirectiveState {
     themeId: 'cipher-gothic',
     integrityState: 'ZANSHIN',
     firedTobiraIds: [],
-    sessionId: `${Date.now().toString(36).toUpperCase()}-${Math.random().toString(36).slice(2,6).toUpperCase()}`,
+    sessionId: generateSessionId(),
     activeProjectIds: [],
     sessionMode: 'BUILD',
     outputTarget: 'claude-ai',
