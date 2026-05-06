@@ -8,6 +8,7 @@ import { PROJECTS, POSTURE_META } from '@/data/projects'
 import { SESSION_PRESETS, activeTriggersForProjects } from '@/data/defaults'
 import { THEME_MAP } from '@/data/themes'
 import { INTEGRITY_STATES, integrityHash } from '@/lib/integrity'
+import { findMode } from '@/data/modes'
 import type { ThemeId } from '@/data/themes'
 import type { IntegrityState } from '@/lib/integrity'
 
@@ -219,7 +220,8 @@ function compileClaudeAI(state: DirectiveState, projects: Project[]): string {
 
   const sections = state.outputSections.filter(s => s.enabled)
   if (sections.length > 0) {
-    lines.push(`OUTPUT FORMAT [${mode}] — ${SESSION_PRESETS[mode].description}`)
+    const modeData = findMode(mode, state.userModes ?? [])
+    lines.push(`OUTPUT FORMAT [${mode}] — ${modeData?.description ?? SESSION_PRESETS[mode]?.description ?? ''}`)
     lines.push(sections.map((s,i) => `${i+1}. ${s.label}`).join(' · '))
     lines.push("Omit sections that don't apply. Never pad.")
     lines.push('')
@@ -409,11 +411,16 @@ function compileProjectMD(state: DirectiveState, projects: Project[]): string {
   lines.push(postureMeta.description)
   lines.push('', '---', '')
 
-  // Narrative fields — AI-authored, if present
-  if (p.identity) { lines.push('## IDENTITY', '', p.identity, '', '---', '') }
-  if (p.philosophy) { lines.push('## PHILOSOPHY', '', p.philosophy, '', '---', '') }
-  if (p.buildSequencing) { lines.push('## BUILD SEQUENCING', '', p.buildSequencing, '', '---', '') }
-  if (p.unstatedConstraints) { lines.push('## UNSTATED CONSTRAINTS', '', p.unstatedConstraints, '', '---', '') }
+  // Narrative fields — runtime overlay takes precedence over static project data
+  const overlay = state.projectNarratives?.[p.id] ?? {}
+  const identity           = overlay.identity           ?? p.identity
+  const philosophy         = overlay.philosophy         ?? p.philosophy
+  const buildSequencing    = overlay.buildSequencing    ?? p.buildSequencing
+  const unstatedConstraints = overlay.unstatedConstraints ?? p.unstatedConstraints
+  if (identity)            { lines.push('## IDENTITY', '', identity, '', '---', '') }
+  if (philosophy)          { lines.push('## PHILOSOPHY', '', philosophy, '', '---', '') }
+  if (buildSequencing)     { lines.push('## BUILD SEQUENCING', '', buildSequencing, '', '---', '') }
+  if (unstatedConstraints) { lines.push('## UNSTATED CONSTRAINTS', '', unstatedConstraints, '', '---', '') }
 
   lines.push('## STACK', '', '```')
   for (const s of p.stack.split(' · ')) lines.push(s.trim())

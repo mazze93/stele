@@ -1,5 +1,6 @@
-import type { DirectiveState, OutputSection, EscalationTrigger, SessionMode } from '@/lib/types'
+import type { DirectiveState, OutputSection, EscalationTrigger } from '@/lib/types'
 import { generateSessionId } from '@/lib/integrity'
+import { BUILT_IN_MODES, findMode } from '@/data/modes'
 
 export const DEFAULT_SECTIONS: OutputSection[] = [
   { id: 'assumptions', label: 'Assumptions',         enabled: true },
@@ -30,14 +31,11 @@ export const DEFAULT_ESCALATIONS: EscalationTrigger[] = [
   { id: 'dr-audit-inert',       label: 'Integrity state transitions without audit trail entry (DR) → treat as YUGAMI signal', locked: true, enabled: true, scope: 'project', projectIds: ['directive-remixer'] },
 ]
 
-export const SESSION_PRESETS: Record<SessionMode, {
+export const SESSION_PRESETS: Record<string, {
   sections: string[]; verbosity: 'dense' | 'standard' | 'expanded'; description: string
-}> = {
-  PLAN:    { sections: ['assumptions','building','rationale'],                           verbosity: 'standard', description: 'Architecture + decision surface. No code. Full rationale.' },
-  BUILD:   { sections: ['assumptions','building','code','rationale','usage','test'],     verbosity: 'standard', description: 'Full implementation. Rationale present. Audit findings only.' },
-  REVIEW:  { sections: ['assumptions','rationale','audit','test'],                       verbosity: 'expanded', description: 'Audit-forward. Full findings. No code generation.' },
-  CAPTURE: { sections: ['assumptions','building'],                                       verbosity: 'dense',    description: 'Minimal ceremony. Decisions recorded. Move fast.' },
-}
+}> = Object.fromEntries(
+  BUILT_IN_MODES.map(m => [m.id, { sections: m.sections, verbosity: m.verbosity, description: m.description }])
+)
 
 export function buildDefaultState(): DirectiveState {
   return {
@@ -55,16 +53,19 @@ export function buildDefaultState(): DirectiveState {
     escalationTriggers: DEFAULT_ESCALATIONS.map(e => ({ ...e })),
     openQuestions: [],
     customAppend: '',
+    userModes: [],
+    projectNarratives: {},
   }
 }
 
-export function applySessionPreset(state: DirectiveState, mode: SessionMode): DirectiveState {
-  const preset = SESSION_PRESETS[mode]
+export function applySessionPreset(state: DirectiveState, modeId: string): DirectiveState {
+  const mode = findMode(modeId, state.userModes)
+  if (!mode) return state
   return {
     ...state,
-    sessionMode: mode,
-    verbosity: preset.verbosity,
-    outputSections: state.outputSections.map(s => ({ ...s, enabled: preset.sections.includes(s.id) })),
+    sessionMode: modeId,
+    verbosity: mode.verbosity,
+    outputSections: state.outputSections.map(s => ({ ...s, enabled: mode.sections.includes(s.id) })),
   }
 }
 

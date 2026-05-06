@@ -1,12 +1,14 @@
 import { useState, useEffect, useRef } from 'react'
-import type { DirectiveState, SessionMode } from '@/lib/types'
+import type { DirectiveState } from '@/lib/types'
 import type { IntegrityState } from '@/lib/integrity'
 import type { ThemeId } from '@/data/themes'
 import { buildDefaultState, applySessionPreset } from '@/data/defaults'
 import { INTEGRITY_STATES, escalate, integrityHash } from '@/lib/integrity'
 import { createAuditTrail, appendEntry } from '@/lib/audit'
-import type { AuditTrail } from '@/lib/audit'
+import type { AuditTrail, AuditAction, AuditEntry } from '@/lib/audit'
 import type { GateResult } from '@/lib/security'
+import type { DirectiveStatePatch } from '@/lib/extraction-schema'
+import type { NarrativeFields } from '@/lib/extractor'
 import { TOBIRA_REGISTRY } from '@/lib/tripwires'
 import { useIsMobile } from '@/hooks/useIsMobile'
 import { useTheme } from '@/hooks/useTheme'
@@ -15,6 +17,8 @@ import { LeverPanel } from '@/components/LeverPanel'
 import { OutputPanel } from '@/components/OutputPanel'
 import { MobileConfig } from '@/components/MobileConfig'
 import './App.css'
+
+type AuditExtras = Omit<Partial<AuditEntry>, 'integrityHash' | 'timestamp' | 'action' | 'sessionId'>
 
 function buildSession() {
   const state = buildDefaultState()
@@ -29,24 +33,25 @@ const MOBILE_TABS: { id: MobileTab; label: string; icon: string }[] = [
 ]
 
 export default function App() {
-  const [session]                   = useState(buildSession)
-  const [state, setState]           = useState<DirectiveState>(session.state)
-  const [auditTrail, setAuditTrail] = useState<AuditTrail>(session.audit)
-  const [mobileTab, setMobileTab]   = useState<MobileTab>('config')
-  const isMobile                    = useIsMobile()
-  const integrity                   = INTEGRITY_STATES[state.integrityState as IntegrityState]
-  const sessionStarted              = useRef(false)
+  const [session]       = useState(buildSession)
+  const [state, setState]  = useState<DirectiveState>(session.state)
+  const [apiKey, setApiKey] = useState('')
+  const [mobileTab, setMobileTab] = useState<MobileTab>('config')
+  const isMobile         = useIsMobile()
+  const integrity        = INTEGRITY_STATES[state.integrityState as IntegrityState]
+  const sessionStarted   = useRef(false)
+  const auditTrailRef    = useRef<AuditTrail>(session.audit)
   useTheme(state.themeId as ThemeId)
 
   useEffect(() => {
-    if (sessionStarted.current) return          // StrictMode second-fire guard
-    sessionStarted.current = true               // set before any state call or async boundary
-    setAuditTrail(t => appendEntry(t, 'session-start', {
+    if (sessionStarted.current) return    // StrictMode second-fire guard
+    sessionStarted.current = true         // set before any state call or async boundary
+    auditTrailRef.current = appendEntry(auditTrailRef.current, 'session-start', {
       integrityHash: integrityHash('ZANSHIN', session.state.sessionId, 0),
-    }))
+    })
   }, [])  // eslint-disable-line react-hooks/exhaustive-deps
 
-  function applyPreset(mode: SessionMode) { setState(prev => applySessionPreset(prev, mode)) }
+  function applyPreset(mode: string) { setState(prev => applySessionPreset(prev, mode)) }
 
   function handleGateResult(gateResult: GateResult) {
     const { scanResult, recommendedTransition } = gateResult
@@ -60,31 +65,67 @@ export default function App() {
     // Snapshot invariant: use nextIntegrity everywhere below — never state.integrityState
     setState(prev => ({ ...prev, integrityState: nextIntegrity, firedTobiraIds: nextFiredIds }))
 
-    setAuditTrail(trail => {
-      let t = trail
-      for (const tobira of scanResult.fired) {
-        t = appendEntry(t, 'tobira-fired', {
-          tobiraId: tobira.id,
-          tobiraCode: tobira.auditCode,
-          integrityHash: hash,
-          secretsDetected: scanResult.secretsDetected,
-        })
+    // Direct ref mutation — no state update for audit entries
+    for (const tobira of scanResult.fired) {
+      auditTrailRef.current = appendEntry(auditTrailRef.current, 'tobira-fired', {
+        tobiraId: tobira.id,
+        tobiraCode: tobira.auditCode,
+        integrityHash: hash,
+        secretsDetected: scanResult.secretsDetected,
+      })
+    }
+    if (nextIntegrity !== currentIntegrity) {
+      auditTrailRef.current = appendEntry(
+        auditTrailRef.current,
+        nextIntegrity === 'EPOCHÉ' ? 'epoche-entered' : 'utsuroi-transition',
+        { fromState: currentIntegrity, toState: nextIntegrity, integrityHash: hash }
+      )
+      auditTrailRef.current = { ...auditTrailRef.current, currentState: nextIntegrity }
+    }
+  }
+
+  function handleApplyPatch(patch: DirectiveStatePatch) {
+    setState(prev => {
+      let next: DirectiveState = { ...prev }
+      if (patch.activeProjectIds !== undefined) next.activeProjectIds = patch.activeProjectIds
+      if (patch.verbosity       !== undefined) next.verbosity         = patch.verbosity
+      if (patch.themeId         !== undefined) next.themeId           = patch.themeId
+      if (patch.hygieneTrigger  !== undefined) next.hygieneTrigger    = patch.hygieneTrigger
+      if (patch.sessionMode     !== undefined) next = applySessionPreset(next, patch.sessionMode)
+      if (patch.openQuestions?.length) {
+        const newQs = patch.openQuestions.map((q, i) => ({
+          id:        `oq-${Date.now()}-${i}`,
+          projectId: q.projectId,
+          text:      q.text,
+        }))
+        next.openQuestions = [...prev.openQuestions, ...newQs]
       }
-      if (nextIntegrity !== currentIntegrity) {
-        t = appendEntry(t, nextIntegrity === 'EPOCHÉ' ? 'epoche-entered' : 'utsuroi-transition', {
-          fromState: currentIntegrity,
-          toState: nextIntegrity,
-          integrityHash: hash,
-        })
-      }
-      return { ...t, currentState: nextIntegrity }
+      return next
     })
+  }
+
+  function handleApplyNarrative(projectId: string, narrative: NarrativeFields) {
+    setState(prev => ({
+      ...prev,
+      projectNarratives: { ...prev.projectNarratives, [projectId]: narrative },
+    }))
+  }
+
+  // Appends to ref — no re-render. Uses ref's currentState to avoid stale closure.
+  function handleAuditEntry(action: AuditAction, extras: AuditExtras = {}) {
+    const hash = integrityHash(
+      auditTrailRef.current.currentState,
+      auditTrailRef.current.sessionId,
+      Date.now(),
+    )
+    auditTrailRef.current = appendEntry(auditTrailRef.current, action, { ...extras, integrityHash: hash })
   }
 
   function handleReset() {
     const newState = buildDefaultState()
     setState(newState)
-    setAuditTrail(createAuditTrail(newState.sessionId))
+    auditTrailRef.current = createAuditTrail(newState.sessionId)
+    setApiKey('')
   }
 
   function handleMobileConfigChange(next: DirectiveState) {
@@ -121,11 +162,13 @@ export default function App() {
           RESET — restore ZANSHIN
         </button>
         <div style={{ fontFamily:'var(--mono-font)', fontSize:'9px', color:'rgba(200,80,128,0.4)', marginTop:'8px' }}>
-          session: {state.sessionId} · {state.firedTobiraIds.length} TOBIRA fired · {auditTrail.entries.length} audit entries
+          session: {state.sessionId} · {state.firedTobiraIds.length} TOBIRA fired · {auditTrailRef.current.entries.length} audit entries
         </div>
       </div>
     )
   }
+
+  const auditTrailSnapshot = auditTrailRef.current
 
   return (
     <div style={{ display:'flex', flexDirection:'column', height:'100dvh', background:'var(--cipher)', color:'var(--vellum)', overflow:'hidden' }}>
@@ -140,8 +183,8 @@ export default function App() {
           {state.firedTobiraIds.length > 0 && (
             <span style={{ fontFamily:'var(--mono-font)', fontSize:'8px', color:integrity.color, borderLeft:`1px solid ${integrity.color}`, paddingLeft:'8px' }}>{state.firedTobiraIds.length} TOBIRA</span>
           )}
-          {auditTrail.entries.length > 0 && (
-            <span style={{ fontFamily:'var(--mono-font)', fontSize:'8px', color:integrity.color, borderLeft:`1px solid ${integrity.color}`, paddingLeft:'8px', opacity:0.7 }}>{auditTrail.entries.length} ◈</span>
+          {auditTrailSnapshot.entries.length > 0 && (
+            <span style={{ fontFamily:'var(--mono-font)', fontSize:'8px', color:integrity.color, borderLeft:`1px solid ${integrity.color}`, paddingLeft:'8px', opacity:0.7 }}>{auditTrailSnapshot.entries.length} ◈</span>
           )}
         </div>
         {!isMobile && <StatusChips state={state} />}
@@ -151,13 +194,13 @@ export default function App() {
         {isMobile ? (
           <div style={{ flex:1, overflow:'hidden' }}>
             {mobileTab==='config' && <div style={{ height:'100%', overflowY:'auto' }}><MobileConfig state={state} onChange={handleMobileConfigChange} onApplyPreset={applyPreset} /></div>}
-            {mobileTab==='levers' && <div style={{ height:'100%', display:'flex', flexDirection:'column', overflow:'hidden' }}><LeverPanel state={state} onChange={setState} auditTrail={auditTrail} /></div>}
+            {mobileTab==='levers' && <div style={{ height:'100%', display:'flex', flexDirection:'column', overflow:'hidden' }}><LeverPanel state={state} onChange={setState} auditTrail={auditTrailSnapshot} integrityState={state.integrityState as IntegrityState} apiKey={apiKey} onSetApiKey={setApiKey} onGateResult={handleGateResult} onApplyPatch={handleApplyPatch} onApplyNarrative={handleApplyNarrative} onAuditEntry={handleAuditEntry} /></div>}
             {mobileTab==='output' && <div style={{ height:'100%', display:'flex', flexDirection:'column', overflow:'hidden' }}><OutputPanel state={state} fullWidth /></div>}
           </div>
         ) : (
           <>
-            <LeftRail state={state} onChange={setState} onApplyPreset={applyPreset} onGateResult={handleGateResult} />
-            <LeverPanel state={state} onChange={setState} auditTrail={auditTrail} />
+            <LeftRail state={state} onChange={setState} onApplyPreset={applyPreset} />
+            <LeverPanel state={state} onChange={setState} auditTrail={auditTrailSnapshot} integrityState={state.integrityState as IntegrityState} apiKey={apiKey} onSetApiKey={setApiKey} onGateResult={handleGateResult} onApplyPatch={handleApplyPatch} onApplyNarrative={handleApplyNarrative} onAuditEntry={handleAuditEntry} />
             <OutputPanel state={state} />
           </>
         )}

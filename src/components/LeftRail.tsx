@@ -1,22 +1,19 @@
 import { PROJECTS, POSTURE_META } from '@/data/projects'
-import { SESSION_PRESETS } from '@/data/defaults'
-import type { DirectiveState, SessionMode, OutputTarget } from '@/lib/types'
-import type { GateResult } from '@/lib/security'
+import { BUILT_IN_MODES } from '@/data/modes'
+import type { DirectiveState, OutputTarget } from '@/lib/types'
 
 type Props = {
   state: DirectiveState
   onChange: (n: DirectiveState) => void
-  onApplyPreset: (m: SessionMode) => void
-  onGateResult?: (r: GateResult) => void
+  onApplyPreset: (m: string) => void
 }
-const MODES: SessionMode[] = ['PLAN','BUILD','REVIEW','CAPTURE']
 const TARGETS: { id: OutputTarget; label: string; hint: string }[] = [
   { id:'claude-ai',         label:'claude.ai instructions', hint:'Paste into Settings › Instructions' },
   { id:'claude-md-global',  label:'CLAUDE.md global',       hint:'Save to ~/.claude/CLAUDE.md' },
   { id:'claude-md-project', label:'CLAUDE.md project',      hint:'Save to <project-root>/CLAUDE.md' },
 ]
 
-export function LeftRail({ state, onChange, onApplyPreset, onGateResult: _onGateResult }: Props) {
+export function LeftRail({ state, onChange, onApplyPreset }: Props) {
   function toggleProject(id: string) {
     const next = state.activeProjectIds.includes(id)
       ? state.activeProjectIds.filter(p => p !== id)
@@ -44,18 +41,18 @@ export function LeftRail({ state, onChange, onApplyPreset, onGateResult: _onGate
       <section>
         <h3 style={head}>Session Mode</h3>
         <div style={{ display:'flex', flexDirection:'column', gap:'3px', marginTop:'10px' }}>
-          {MODES.map(mode => {
-            const active = state.sessionMode === mode
+          {BUILT_IN_MODES.concat(state.userModes ?? []).map(mode => {
+            const active = state.sessionMode === mode.id
             return (
-              <button key={mode} onClick={() => onApplyPreset(mode)} title={SESSION_PRESETS[mode].description}
+              <button key={mode.id} onClick={() => onApplyPreset(mode.id)} title={mode.description}
                 style={{ padding:'8px 10px', minHeight:'44px', background:active?'var(--surface-raised)':'transparent', border:`1px solid ${active?'var(--gold)':'transparent'}`, borderRadius:'3px', cursor:'pointer', width:'100%', transition:'all 0.12s', touchAction:'manipulation', fontFamily:'var(--mono-font)', fontSize:'11px', color:active?'var(--gold)':'var(--vellum-dim)', textAlign:'left' }}>
-                [{mode}]
+                [{mode.label}]
               </button>
             )
           })}
         </div>
         <p style={{ fontFamily:'var(--mono-font)', fontSize:'9px', color:'var(--vellum-faint)', marginTop:'6px', lineHeight:1.5 }}>
-          {SESSION_PRESETS[state.sessionMode].description}
+          {BUILT_IN_MODES.concat(state.userModes ?? []).find(m => m.id === state.sessionMode)?.description ?? ''}
         </p>
       </section>
       <section>

@@ -1,13 +1,12 @@
-import type { DirectiveState, SessionMode } from '@/lib/types'
+import type { DirectiveState } from '@/lib/types'
 import { PROJECTS, POSTURE_META } from '@/data/projects'
-import { SESSION_PRESETS } from '@/data/defaults'
-const MODES: SessionMode[] = ['PLAN','BUILD','REVIEW','CAPTURE']
+import { BUILT_IN_MODES } from '@/data/modes'
 const TARGETS = [
   { id:'claude-ai' as const,         label:'claude.ai instructions', hint:'Paste into Settings › Instructions' },
   { id:'claude-md-global' as const,  label:'CLAUDE.md global',       hint:'Save to ~/.claude/CLAUDE.md' },
   { id:'claude-md-project' as const, label:'CLAUDE.md project',      hint:'Save to <project-root>/CLAUDE.md' },
 ]
-type Props = { state: DirectiveState; onChange: (n: DirectiveState) => void; onApplyPreset: (m: SessionMode) => void }
+type Props = { state: DirectiveState; onChange: (n: DirectiveState) => void; onApplyPreset: (m: string) => void }
 export function MobileConfig({ state, onChange, onApplyPreset }: Props) {
   function toggleProject(id: string) {
     const next = state.activeProjectIds.includes(id)
@@ -36,17 +35,17 @@ export function MobileConfig({ state, onChange, onApplyPreset }: Props) {
       <section>
         <h3 style={head}>Session Mode</h3>
         <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:'6px', marginTop:'12px' }}>
-          {MODES.map(mode => {
-            const active = state.sessionMode === mode
+          {BUILT_IN_MODES.concat(state.userModes ?? []).map(mode => {
+            const active = state.sessionMode === mode.id
             return (
-              <button key={mode} onClick={() => onApplyPreset(mode)}
+              <button key={mode.id} onClick={() => onApplyPreset(mode.id)}
                 style={{ padding:'12px 10px', minHeight:'48px', background:active?'var(--surface-raised)':'var(--surface)', border:`1px solid ${active?'var(--gold)':'var(--border-color)'}`, borderRadius:'4px', cursor:'pointer', touchAction:'manipulation', fontFamily:'var(--mono-font)', fontSize:'11px', color:active?'var(--gold)':'var(--vellum-dim)' }}>
-                [{mode}]
+                [{mode.label}]
               </button>
             )
           })}
         </div>
-        <p style={hint}>{SESSION_PRESETS[state.sessionMode].description}</p>
+        <p style={hint}>{BUILT_IN_MODES.concat(state.userModes ?? []).find(m => m.id === state.sessionMode)?.description ?? ''}</p>
       </section>
       <section>
         <h3 style={head}>Output Target</h3>

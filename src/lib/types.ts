@@ -3,10 +3,12 @@
 // The lexicon is load-bearing — see CLAUDE.md for vocabulary constraints.
 
 import type { IntegrityState } from './integrity'
+import type { CustomMode } from '@/data/modes'
 export type { IntegrityState }
+export type { CustomMode }
 
 export type Posture = 'MAX' | 'HIGH' | 'CREATIVE' | 'RESEARCH' | 'STANDARD' | 'GUARDIAN'
-export type SessionMode = 'PLAN' | 'BUILD' | 'REVIEW' | 'CAPTURE'
+export type SessionMode = string
 export type Verbosity = 'dense' | 'standard' | 'expanded'
 export type OutputTarget = 'claude-ai' | 'claude-md-global' | 'claude-md-project'
 export type HygieneTrigger = 'off' | 'on-copy' | 'turn-based' | 'manual'
@@ -78,4 +80,11 @@ export type DirectiveState = {
   escalationTriggers: EscalationTrigger[]
   openQuestions: OpenQuestion[]
   customAppend: string
+  userModes: CustomMode[]
+  projectNarratives: Record<string, {
+    identity?: string
+    philosophy?: string
+    buildSequencing?: string
+    unstatedConstraints?: string
+  }>
 }
