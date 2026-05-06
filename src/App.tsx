@@ -95,6 +95,10 @@ export default function App() {
 
   // EPOCHÉ: entire UI enters lockout — only reset path available
   if (state.integrityState === 'EPOCHÉ') {
+    const firedTobira = state.firedTobiraIds.map(id =>
+      TOBIRA_REGISTRY.find(t => t.id === id)
+      ?? { auditCode: 'UNKNOWN', message: 'Unregistered integrity exception.' }
+    )
     return (
       <div style={{ display:'flex', flexDirection:'column', height:'100dvh', background:integrity.colorDim, color:integrity.color, alignItems:'center', justifyContent:'center', padding:'40px', textAlign:'center', gap:'24px' }}>
         <div style={{ fontSize:'48px', fontFamily:'serif' }}>{integrity.glyph}</div>
@@ -104,12 +108,20 @@ export default function App() {
           The egregore is suspended — not destroyed. ZANSHIN is recoverable.<br />
           Only a deliberate reset restores clean state.
         </div>
-        <button onClick={() => setState(buildDefaultState())}
+        {firedTobira.length > 0 && (
+          <div style={{ fontFamily:'var(--mono-font)', fontSize:'9px', color:'rgba(200,80,128,0.7)', maxWidth:'480px', textAlign:'left', display:'flex', flexDirection:'column', gap:'4px', padding:'12px 16px', border:'1px solid rgba(200,80,128,0.3)', borderRadius:'4px', background:'rgba(200,80,128,0.06)', width:'100%' }}>
+            <div style={{ letterSpacing:'0.1em', marginBottom:'6px', color:'rgba(200,80,128,0.5)', fontSize:'8px' }}>TOBIRA FIRED THIS SESSION</div>
+            {firedTobira.map((t, i) => (
+              <div key={i}>[{t.auditCode}] {t.message}</div>
+            ))}
+          </div>
+        )}
+        <button onClick={handleReset}
           style={{ padding:'12px 32px', background:'transparent', border:`1px solid ${integrity.color}`, borderRadius:'4px', cursor:'pointer', fontFamily:'var(--mono-font)', fontSize:'12px', color:integrity.color, letterSpacing:'0.1em', touchAction:'manipulation' }}>
           RESET — restore ZANSHIN
         </button>
         <div style={{ fontFamily:'var(--mono-font)', fontSize:'9px', color:'rgba(200,80,128,0.4)', marginTop:'8px' }}>
-          session: {state.sessionId} · {state.firedTobiraIds.length} TOBIRA fired
+          session: {state.sessionId} · {state.firedTobiraIds.length} TOBIRA fired · {auditTrail.entries.length} audit entries
         </div>
       </div>
     )
@@ -128,6 +140,9 @@ export default function App() {
           {state.firedTobiraIds.length > 0 && (
             <span style={{ fontFamily:'var(--mono-font)', fontSize:'8px', color:integrity.color, borderLeft:`1px solid ${integrity.color}`, paddingLeft:'8px' }}>{state.firedTobiraIds.length} TOBIRA</span>
           )}
+          {auditTrail.entries.length > 0 && (
+            <span style={{ fontFamily:'var(--mono-font)', fontSize:'8px', color:integrity.color, borderLeft:`1px solid ${integrity.color}`, paddingLeft:'8px', opacity:0.7 }}>{auditTrail.entries.length} ◈</span>
+          )}
         </div>
         {!isMobile && <StatusChips state={state} />}
       </header>
@@ -141,7 +156,7 @@ export default function App() {
           </div>
         ) : (
           <>
-            <LeftRail state={state} onChange={setState} onApplyPreset={applyPreset} />
+            <LeftRail state={state} onChange={setState} onApplyPreset={applyPreset} onGateResult={handleGateResult} />
             <LeverPanel state={state} onChange={setState} />
             <OutputPanel state={state} />
           </>
