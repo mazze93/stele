@@ -4,13 +4,18 @@ import { INTEGRITY_STATES } from '@/lib/integrity'
 import { UTSUROI_MODULES, TOBIRA_REGISTRY, computeCouplingMatrix } from '@/lib/tripwires'
 import { PROJECTS } from '@/data/projects'
 import type { DirectiveState } from '@/lib/types'
+import type { AuditTrail } from '@/lib/audit'
 type ActiveCell = { row:number; col:number; score:number } | null
-type Props = { state: DirectiveState; integrityState: IntegrityState; firedTobiraIds: string[] }
+type Props = { state: DirectiveState; integrityState: IntegrityState; firedTobiraIds: string[]; auditTrail: AuditTrail }
 
-export function UtsuroiPanel({ state, integrityState, firedTobiraIds }: Props) {
+export function UtsuroiPanel({ state, integrityState, firedTobiraIds, auditTrail }: Props) {
   const [hovered, setHovered] = useState<ActiveCell>(null)
   const [selected, setSelected] = useState<ActiveCell>(null)
   const matrix = useMemo(() => computeCouplingMatrix(), [])
+  const displayTrail = useMemo(
+    () => [...auditTrail.entries].slice(-30).reverse(),
+    [auditTrail.entries]
+  )
   const active = selected ?? hovered
   const integrity = INTEGRITY_STATES[integrityState]
 
@@ -170,6 +175,53 @@ export function UtsuroiPanel({ state, integrityState, firedTobiraIds }: Props) {
             )
           })}
         </div>
+      </div>
+
+      {/* UTSUROI TRAIL */}
+      <div style={{ background:'var(--surface)', border:'1px solid var(--border-color)', borderRadius:'4px', padding:'14px' }}>
+        <p style={{ ...sHead, marginBottom:'12px' }}>
+          UTSUROI TRAIL — {auditTrail.entries.length} {auditTrail.entries.length === 1 ? 'entry' : 'entries'} · session {auditTrail.sessionId}
+        </p>
+        {displayTrail.length === 0 ? (
+          <div style={{ padding:'16px', textAlign:'center', border:'1px dashed var(--border-color)', borderRadius:'3px' }}>
+            <span style={{ fontFamily:'var(--mono-font)', fontSize:'9px', color:'var(--vellum-faint)' }}>no entries — session start pending</span>
+          </div>
+        ) : (
+          <div style={{ overflowX:'auto' }}>
+            <table style={{ width:'100%', borderCollapse:'collapse' }}>
+              <thead>
+                <tr>
+                  {(['time','action','tobira','hash'] as const).map(h => (
+                    <th key={h} style={{ fontFamily:'var(--mono-font)', fontSize:'8px', color:'var(--vellum-faint)', fontWeight:'normal', textAlign:'left', padding:'2px 6px', letterSpacing:'0.1em', borderBottom:'1px solid var(--border-color)', whiteSpace:'nowrap' }}>{h}</th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {displayTrail.map((entry, i) => {
+                  const isStructural = entry.action === 'session-start'
+                  const isThreat     = ['tobira-fired','utsuroi-transition','epoche-entered'].includes(entry.action)
+                  const rowColor     = isStructural ? 'var(--vellum-faint)' : isThreat ? integrity.color : 'var(--vellum-dim)'
+                  return (
+                    <tr key={i} style={{ borderBottom:'1px solid rgba(255,255,255,0.03)' }}>
+                      <td style={{ fontFamily:'var(--mono-font)', fontSize:'8px', color:'var(--vellum-faint)', padding:'3px 6px', whiteSpace:'nowrap' }}>
+                        {entry.timestamp.split('T')[1]?.split('.')[0] ?? '—'}
+                      </td>
+                      <td style={{ fontFamily:'var(--mono-font)', fontSize:'8px', color:rowColor, padding:'3px 6px', whiteSpace:'nowrap' }}>
+                        {entry.action}
+                      </td>
+                      <td style={{ fontFamily:'var(--mono-font)', fontSize:'8px', color:'var(--vellum-faint)', padding:'3px 6px', whiteSpace:'nowrap' }}>
+                        {entry.tobiraCode ?? '—'}
+                      </td>
+                      <td style={{ fontFamily:'var(--mono-font)', fontSize:'8px', color:'var(--vellum-faint)', padding:'3px 6px', maxWidth:'8ch', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap', fontVariantNumeric:'tabular-nums' }}>
+                        {entry.integrityHash}
+                      </td>
+                    </tr>
+                  )
+                })}
+              </tbody>
+            </table>
+          </div>
+        )}
       </div>
     </div>
   )

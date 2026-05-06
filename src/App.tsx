@@ -151,13 +151,13 @@ export default function App() {
         {isMobile ? (
           <div style={{ flex:1, overflow:'hidden' }}>
             {mobileTab==='config' && <div style={{ height:'100%', overflowY:'auto' }}><MobileConfig state={state} onChange={handleMobileConfigChange} onApplyPreset={applyPreset} /></div>}
-            {mobileTab==='levers' && <div style={{ height:'100%', display:'flex', flexDirection:'column', overflow:'hidden' }}><LeverPanel state={state} onChange={setState} /></div>}
+            {mobileTab==='levers' && <div style={{ height:'100%', display:'flex', flexDirection:'column', overflow:'hidden' }}><LeverPanel state={state} onChange={setState} auditTrail={auditTrail} /></div>}
             {mobileTab==='output' && <div style={{ height:'100%', display:'flex', flexDirection:'column', overflow:'hidden' }}><OutputPanel state={state} fullWidth /></div>}
           </div>
         ) : (
           <>
             <LeftRail state={state} onChange={setState} onApplyPreset={applyPreset} onGateResult={handleGateResult} />
-            <LeverPanel state={state} onChange={setState} />
+            <LeverPanel state={state} onChange={setState} auditTrail={auditTrail} />
             <OutputPanel state={state} />
           </>
         )}
