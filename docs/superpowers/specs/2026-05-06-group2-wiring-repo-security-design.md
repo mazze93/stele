@@ -56,11 +56,13 @@ setAuditTrail(...) — append tobira-fired per TOBIRA, then utsuroi-transition o
 
 `setState` and `setAuditTrail` are separate synchronous calls — no side effects inside setState callbacks.
 
+**Snapshot invariant:** All audit entry metadata (`fromState`, `toState`, integrity color) must be derived from `nextIntegrity` — the local variable computed before any setter is called. Never read `state.integrityState` after computing `nextIntegrity`; React 18 batches updates and the closure value is stale at `setAuditTrail` call time.
+
 **Latching invariant:** Clean input after a TOBIRA fires does NOT de-escalate state. Only `handleReset()` clears the session. This is intentional — see integrity.ts comment "Always escalates — never de-escalates within a session."
 
 ### `session-start` on mount
 
-`useEffect` with empty deps, guarded by `useRef(false)` against React StrictMode double-fire. Appends one `session-start` entry.
+`useEffect` with empty deps, guarded by `useRef(false)` against React StrictMode double-fire. `ref.current = true` is set as the **first line** of the effect body — before any state call — so that if `appendEntry` is ever made async, the guard still fires before any await boundary.
 
 ### `handleReset()`
 
@@ -206,6 +208,8 @@ enforce_admins: true
 ```
 
 `required_approving_review_count: 0` — PRs required, no approval gating (solo maintainer). Bump to 1 when collaborators join.
+
+`strict: false` — explicit accepted tradeoff. The `tsc` check runs against the PR branch without requiring it to be up-to-date with `main`. A type regression introduced in `main` after the PR branch was cut won't be caught until after merge. Acceptable for a solo maintainer; revisit when collaborators join or when merge queues are enabled.
 
 ---
 
