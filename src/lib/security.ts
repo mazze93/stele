@@ -9,7 +9,7 @@
 //   - On GateResult.blocked === true, escalate() integrity state and fire TOBIRA
 //   - appendEntry() to audit trail for every gate() call
 
-import { scanInput } from './tripwires'
+import { scanPasteInput } from './tripwires'
 import { INTEGRITY_STATES } from './integrity'
 import type { IntegrityState } from './integrity'
 import type { ScanResult } from './tripwires'
@@ -44,7 +44,7 @@ export function gate(input: string): GateResult {
     }
   }
 
-  const scanResult = scanInput(input)
+  const scanResult = scanPasteInput(input)
 
   // Determine highest severity transition from fired TOBIRA
   let recommendedTransition: IntegrityState = 'ZANSHIN'
