@@ -26,6 +26,9 @@ stele.html
 *.zip
 *.tar.gz
 
+# Git worktrees
+.worktrees/
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json
