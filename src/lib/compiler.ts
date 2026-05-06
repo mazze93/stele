@@ -7,7 +7,7 @@ import type { DirectiveState, Project } from '@/lib/types'
 import { PROJECTS, POSTURE_META } from '@/data/projects'
 import { SESSION_PRESETS, activeTriggersForProjects } from '@/data/defaults'
 import { THEME_MAP } from '@/data/themes'
-import { INTEGRITY_STATES } from '@/lib/integrity'
+import { INTEGRITY_STATES, integrityHash } from '@/lib/integrity'
 import type { ThemeId } from '@/data/themes'
 import type { IntegrityState } from '@/lib/integrity'
 
@@ -52,7 +52,7 @@ function hygieneBlock(state: DirectiveState): string[] {
 function integrityBlock(state: DirectiveState): string[] {
   const is = state.integrityState as IntegrityState
   const integrity = INTEGRITY_STATES[is]
-  const hash = state.sessionId
+  const hash = integrityHash(is, state.sessionId, 0)
   const fired = state.firedTobiraIds
 
   if (is === 'EPOCHÉ') {
