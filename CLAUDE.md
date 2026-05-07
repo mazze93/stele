@@ -99,42 +99,37 @@ not a convention. Violating it opens an attack surface before the gate exists.
 - EPOCHÉ block replaces all other compiled sections entirely — it is the
   whole egregore when state is EPOCHÉ
 
-**Group 4 — API surface (Groups 1–3 complete and reviewed)**
+**Group 4 — API surface (Groups 1–3 complete and reviewed)** ✓ COMPLETE
 - `src/lib/extractor.ts` — hardened API call; system prompt that frames
-  the model as a schema extractor not an interpreter; `max_tokens: 800`;
-  response parser; field stripper
-- `src/components/panels/InheritPanel.tsx` — paste zone; file type selector;
-  TOBIRA gate before any content reaches the API; diff-before-apply;
-  per-section confirmation; EPOCHÉ lockout chrome (red chrome, reset-only)
-- `src/components/panels/CollaboratorPanel.tsx` — Claude feedback on current
-  directive state; same security layer, no state writes
+  the model as a schema extractor not an interpreter; `max_tokens: 1000`;
+  response parser; field stripper. Collaborator call: `max_tokens: 1500`.
+- `src/components/panels/InheritPanel.tsx` — paste zone; TOBIRA gate before
+  any content reaches the API; per-field checkbox confirm before patch applies;
+  EPOCHÉ and WABI lockout branches distinct
+- `src/components/panels/CollaboratorPanel.tsx` — philosopher-scribe narrative
+  authoring for active projects; editable textareas pre-filled from model output;
+  writes to `state.projectNarratives`; session-only (copy to projects.ts to persist)
 
-**Group 5 — Custom modes (parallel to Groups 2–3)**
-- Convert `SessionMode` from union type to `CustomMode` data registry in
-  `src/data/modes.ts`
+**Group 5 — Custom modes (parallel to Groups 2–3)** ✓ COMPLETE
+- `SessionMode` is now `string`; `CustomMode` data registry lives in `src/data/modes.ts`
 - Built-in modes protected from deletion; user modes forkable from any existing
+- `state.userModes: CustomMode[]` and `state.projectNarratives` added to `DirectiveState`
 
 ---
 
-## WHAT IS BUILT VS WHAT IS INERT
+## CURRENT STATE — Groups 1–5 complete
 
-The instrument cluster is on. The instruments are not connected to the engine.
+All build groups are complete and wired. The "inert" period ended with Group 2.
 
-**Built and wired:**
-- `integrity.ts` — state machine, `escalate()`, `integrityHash()`
-- `tripwires.ts` — 13 TOBIRA, Jaccard coupling matrix, `scanInput()`
-- `audit.ts` — `AuditTrail`, `appendEntry()`, render functions
-- `UtsuroiPanel.tsx` — live coupling matrix, state banner, TOBIRA registry
-- Header ZANSHIN strip — displays `integrityState`, colors shift with state
-- `DirectiveState` has `integrityState`, `firedTobiraIds`, `sessionId` with defaults
-
-**Built but inert — not yet called by anything outside their own files:**
-- `escalate()` — exists in integrity.ts, never called from App or components
-- `scanInput()` — exists in tripwires.ts, never called from App or components
-- `appendEntry()` — exists in audit.ts, never called from App or components
-- `integrityState` — defaults to ZANSHIN, never transitions
-
-Group 2 is the wiring work. Do not skip to Group 4 to fix this.
+**Fully wired:**
+- `integrity.ts` — `escalate()` called from `App.handleGateResult`; transitions fire on every TOBIRA
+- `tripwires.ts` — `scanInput()` called from `security.gate()`; `gate()` called in InheritPanel and CollaboratorPanel before any API call
+- `audit.ts` — `appendEntry()` called via `handleAuditEntry` ref; `auditTrailRef` is a `useRef` (no re-render per entry)
+- `compiler.ts` — `integrityBlock()` emits ZANSHIN/UNHEIMLICH/WABI/EPOCHÉ language; EPOCHÉ replaces all other sections
+- `App.tsx` — EPOCHÉ lockout is a full UI replacement (glyph, fired TOBIRA list, reset-only path)
+- `InheritPanel.tsx` — paste zone, gate-then-extract, per-field confirm, EPOCHÉ/WABI branches distinct
+- `CollaboratorPanel.tsx` — active-projects-only selector, philosopher-scribe narrative, editable fields, session-only persistence note
+- `modes.ts` — `CustomMode` registry; `BUILT_IN_MODES` protected; `findMode()` merges user modes
 
 ---
 
@@ -147,8 +142,10 @@ Cipher Gothic design system — CSS vars, no hardcoded hex in components
 5 themes: cipher-gothic · secure-pride · operators-terminal · vellum-smoke · signal-blue
 ```
 
-Root: `~/dev/directive-remixer` (or wherever STELE lives)
-Compile output: `bundle.html` — single self-contained file via Parcel
+Root: `~/🚀 PROJECTS/stele`
+Compile output: `bundle.html` — single self-contained file. Parcel removed; use
+`vite-plugin-singlefile` when this is built. Add to vite.config.ts:
+`import { viteSingleFile } from 'vite-plugin-singlefile'`
 
 ---
 
@@ -167,11 +164,8 @@ Compile output: `bundle.html` — single self-contained file via Parcel
 
 ---
 
-## OPEN QUESTIONS — all active
+## OPEN QUESTIONS
 
-- Integrity block in compiler: ritualized ZANSHIN/UNHEIMLICH/WABI/EPOCHÉ
-  compiled into egregore output — designed, not yet implemented
-- EPOCHÉ chrome: full UI lockout, red chrome, reset-only path — not started
-- CollaboratorPanel: Claude-as-collaborator feedback on directive state — not started
-- Custom modes as data registry — SessionMode still a union type in types.ts
-- Audit trail inert — see "what is inert" above
+- `bundle.html` single-file output — use `vite-plugin-singlefile`; not yet wired
+- User mode fork UI — `state.userModes` exists in state but no UI to create/fork modes yet
+- `projectNarratives` copy-to-projects.ts workflow — currently manual; could add export helper
