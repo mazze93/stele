@@ -8,6 +8,12 @@ import { callCollaborator } from '@/lib/extractor'
 import type { NarrativeFields, ProjectContext } from '@/lib/extractor'
 import { PROJECTS } from '@/data/projects'
 import type { AuditAction, AuditEntry } from '@/lib/audit'
+import {
+  buildConfoundsBlock,
+  buildProjectNarrativeExport,
+  downloadNarrativeExport,
+} from '@/lib/narrativeExport'
+import type { ConfoundsBlock } from '@/lib/narrativeExport'
 
 type AuditExtras = Omit<Partial<AuditEntry>, 'integrityHash' | 'timestamp' | 'action' | 'sessionId'>
 type Status = 'idle' | 'gating' | 'calling' | 'applied' | 'blocked' | 'error'
@@ -30,13 +36,16 @@ export function CollaboratorPanel({
   const activeProjects = PROJECTS.filter(p => state.activeProjectIds.includes(p.id))
 
   const [selectedId,  setSelectedId]  = useState<string>(activeProjects[0]?.id ?? '')
-  const [status,      setStatus]      = useState<Status>('idle')
-  const [errorMsg,    setErrorMsg]    = useState<string | null>(null)
-  const [gateResult,  setGateResult]  = useState<GateResult | null>(null)
-  const [keyInput,    setKeyInput]    = useState('')
-  const [fields,      setFields]      = useState<Record<string, string>>({
+  const [status,        setStatus]        = useState<Status>('idle')
+  const [errorMsg,      setErrorMsg]      = useState<string | null>(null)
+  const [gateResult,    setGateResult]    = useState<GateResult | null>(null)
+  const [keyInput,      setKeyInput]      = useState('')
+  const [fields,        setFields]        = useState<Record<string, string>>({
     identity: '', philosophy: '', buildSequencing: '', unstatedConstraints: '',
   })
+  const [exportOpen,    setExportOpen]    = useState(false)
+  const [confoundNotes, setConfoundNotes] = useState<Record<string, string>>({})
+  const [openRows,      setOpenRows]      = useState<Record<string, boolean>>({})
 
   const integrity = INTEGRITY_STATES[integrityState]
   const canCall   = integrity.allowsApiCalls
@@ -187,6 +196,9 @@ export function CollaboratorPanel({
                 setSelectedId(p.id)
                 setFields({ identity: '', philosophy: '', buildSequencing: '', unstatedConstraints: '' })
                 setStatus('idle')
+                setExportOpen(false)
+                setConfoundNotes({})
+                setOpenRows({})
               }}
               style={{ display:'flex', alignItems:'center', gap:'10px', padding:'10px 12px', minHeight:'44px', background:selectedId === p.id ? 'var(--surface-raised)' : 'var(--surface)', border:`1px solid ${selectedId === p.id ? 'var(--teal)' : 'var(--border-color)'}`, borderRadius:'3px', cursor:'pointer', touchAction:'manipulation', textAlign:'left', width:'100%' }}>
               <span style={{ fontFamily:'var(--mono-font)', fontSize:'11px', color:selectedId === p.id ? 'var(--teal-bright)' : 'var(--vellum-dim)', flex:1 }}>{p.label}</span>
@@ -270,6 +282,102 @@ export function CollaboratorPanel({
               Discard
             </button>
           </div>
+        </div>
+      )}
+
+      {/* Export drawer — only when narrative applied to session */}
+      {existingNarrative?.identity && selectedProject && (
+        <div style={{ display:'flex', flexDirection:'column', gap:'0' }}>
+          <button
+            onClick={() => setExportOpen(prev => !prev)}
+            style={{ display:'flex', alignItems:'center', justifyContent:'space-between', padding:'10px 12px', background:'var(--surface)', border:'1px solid var(--border-color)', borderRadius: exportOpen ? '3px 3px 0 0' : '3px', cursor:'pointer', fontFamily:'var(--mono-font)', fontSize:'11px', color:'var(--vellum-dim)', touchAction:'manipulation', letterSpacing:'0.08em', width:'100%', textAlign:'left' }}>
+            <span>Export narrative</span>
+            <span style={{ fontSize:'9px', color:'var(--vellum-faint)' }}>{exportOpen ? '▲' : '▼'}</span>
+          </button>
+
+          {exportOpen && (() => {
+            const baseConfounds = buildConfoundsBlock(selectedProject)
+            const confoundKeys = Object.keys(baseConfounds) as Array<keyof ConfoundsBlock>
+            return (
+              <div style={{ border:'1px solid var(--border-color)', borderTop:'none', borderRadius:'0 0 3px 3px', overflow:'hidden' }}>
+
+                {/* Narrative preview */}
+                <div style={{ padding:'12px 14px', borderBottom:'1px solid var(--border-color)', background:'var(--cipher)' }}>
+                  <p style={{ ...sHead, marginBottom:'10px' }}>Narrative preview</p>
+                  {FIELDS.map(field => {
+                    const val = existingNarrative[field]
+                    return val ? (
+                      <div key={field} style={{ marginBottom:'8px' }}>
+                        <p style={{ ...sHead, color:'var(--teal)', marginBottom:'3px' }}>{field}</p>
+                        <p style={{ fontFamily:'var(--mono-font)', fontSize:'10px', color:'var(--vellum-dim)', margin:0, lineHeight:1.6, whiteSpace:'pre-wrap' }}>{val}</p>
+                      </div>
+                    ) : null
+                  })}
+                </div>
+
+                {/* Confounds */}
+                <div style={{ padding:'12px 14px', background:'var(--surface)' }}>
+                  <p style={{ ...sHead, marginBottom:'10px' }}>Confounds</p>
+                  {confoundKeys.map(key => {
+                    const base   = baseConfounds[key]
+                    const note   = confoundNotes[key]?.trim() ?? ''
+                    const status = note ? 'human-reviewed' : base.status
+                    const rowOpen = openRows[key] ?? false
+
+                    const chipColor =
+                      status === 'human-reviewed'     ? 'var(--teal)'   :
+                      status === 'flagged-by-heuristic' ? 'var(--gold)'   :
+                      'var(--vellum-faint)'
+
+                    return (
+                      <div key={key} style={{ marginBottom:'10px', paddingBottom:'10px', borderBottom:'1px solid var(--border-color)' }}>
+                        <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', gap:'8px' }}>
+                          <span style={{ fontFamily:'var(--mono-font)', fontSize:'10px', color:'var(--vellum-dim)', flex:1 }}>{key}</span>
+                          <span style={{ fontFamily:'var(--mono-font)', fontSize:'8px', color:chipColor, border:`1px solid ${chipColor}`, borderRadius:'2px', padding:'1px 5px', letterSpacing:'0.06em', whiteSpace:'nowrap' }}>
+                            {status === 'human-reviewed' ? 'reviewed' : status === 'flagged-by-heuristic' ? 'flagged' : 'unaddressed'}
+                          </span>
+                          <button
+                            onClick={() => setOpenRows(prev => ({ ...prev, [key]: !prev[key] }))}
+                            style={{ background:'transparent', border:'none', cursor:'pointer', fontFamily:'var(--mono-font)', fontSize:'9px', color:'var(--vellum-faint)', padding:'2px 6px', touchAction:'manipulation' }}>
+                            {rowOpen ? 'Close' : 'Review'}
+                          </button>
+                        </div>
+
+                        {base.heuristicSource && !note && (
+                          <p style={{ fontFamily:'var(--mono-font)', fontSize:'9px', color:'var(--gold)', margin:'4px 0 0', lineHeight:1.5 }}>
+                            Flagged: {base.heuristicSource}
+                          </p>
+                        )}
+
+                        {rowOpen && (
+                          <textarea
+                            value={confoundNotes[key] ?? ''}
+                            onChange={e => setConfoundNotes(prev => ({ ...prev, [key]: e.target.value }))}
+                            rows={3}
+                            placeholder="Add a review note to mark this as human-reviewed…"
+                            spellCheck={false}
+                            style={{ width:'100%', marginTop:'6px', background:'var(--cipher)', border:'1px solid var(--border-color)', borderRadius:'3px', color:'var(--vellum-dim)', fontFamily:'var(--mono-font)', fontSize:'10px', lineHeight:1.6, padding:'6px 8px', resize:'vertical', boxSizing:'border-box' }}
+                          />
+                        )}
+                      </div>
+                    )
+                  })}
+                </div>
+
+                {/* Download */}
+                <div style={{ padding:'12px 14px', borderTop:'1px solid var(--border-color)', background:'var(--cipher)' }}>
+                  <button
+                    onClick={() => {
+                      const exported = buildProjectNarrativeExport(selectedProject, state, confoundNotes)
+                      downloadNarrativeExport(exported)
+                    }}
+                    style={{ width:'100%', padding:'10px', background:'transparent', border:'1px solid var(--teal)', borderRadius:'3px', cursor:'pointer', fontFamily:'var(--mono-font)', fontSize:'11px', color:'var(--teal)', letterSpacing:'0.08em', touchAction:'manipulation' }}>
+                    Download JSON
+                  </button>
+                </div>
+              </div>
+            )
+          })()}
         </div>
       )}
     </div>
