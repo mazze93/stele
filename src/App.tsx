@@ -37,6 +37,7 @@ export default function App() {
   const [state, setState]  = useState<DirectiveState>(session.state)
   const [apiKey, setApiKey] = useState('')
   const [mobileTab, setMobileTab] = useState<MobileTab>('config')
+  const [auditCount, setAuditCount] = useState(0)
   const isMobile         = useIsMobile()
   const integrity        = INTEGRITY_STATES[state.integrityState as IntegrityState]
   const sessionStarted   = useRef(false)
@@ -119,6 +120,7 @@ export default function App() {
       Date.now(),
     )
     auditTrailRef.current = appendEntry(auditTrailRef.current, action, { ...extras, integrityHash: hash })
+    setAuditCount(auditTrailRef.current.entries.length)
   }
 
   function handleReset() {
@@ -183,8 +185,8 @@ export default function App() {
           {state.firedTobiraIds.length > 0 && (
             <span style={{ fontFamily:'var(--mono-font)', fontSize:'8px', color:integrity.color, borderLeft:`1px solid ${integrity.color}`, paddingLeft:'8px' }}>{state.firedTobiraIds.length} TOBIRA</span>
           )}
-          {auditTrailSnapshot.entries.length > 0 && (
-            <span style={{ fontFamily:'var(--mono-font)', fontSize:'8px', color:integrity.color, borderLeft:`1px solid ${integrity.color}`, paddingLeft:'8px', opacity:0.7 }}>{auditTrailSnapshot.entries.length} ◈</span>
+          {auditCount > 0 && (
+            <span style={{ fontFamily:'var(--mono-font)', fontSize:'8px', color:integrity.color, borderLeft:`1px solid ${integrity.color}`, paddingLeft:'8px', opacity:0.7 }}>{auditCount} ◈</span>
           )}
         </div>
         {!isMobile && <StatusChips state={state} />}

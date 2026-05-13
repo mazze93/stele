@@ -1,8 +1,7 @@
 import type { Project, Tessera, DirectiveState } from '@/lib/types'
 import type { IntegrityState } from '@/lib/integrity'
 import { INTEGRITY_STATES } from '@/lib/integrity'
-
-const VERSION = '0.0.0'
+import { STELE_VERSION } from '@/lib/version'
 
 export type ConfoundStatus = {
   status:           'unaddressed' | 'flagged-by-heuristic' | 'human-reviewed'
@@ -108,7 +107,7 @@ export function buildProjectNarrativeExport(
     }))
 
   return {
-    steleVersion:   VERSION,
+    steleVersion:   STELE_VERSION,
     exportedAt:     new Date().toISOString(),
     projectId:      project.id,
     sessionId:      state.sessionId,

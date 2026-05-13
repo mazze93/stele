@@ -48,6 +48,11 @@ export function LeverPanel({
 }: Props) {
   const [activeTab, setActiveTab] = useState<Tab>('format')
 
+  const narrativeCount = state.activeProjectIds.filter(id => {
+    const n = state.projectNarratives?.[id]
+    return n && Object.values(n).some(v => v && v.trim().length > 0)
+  }).length
+
   const badges: Partial<Record<Tab, string>> = {
     questions:  state.openQuestions.length > 0 ? String(state.openQuestions.length) : undefined,
     governance: String(state.escalationTriggers.filter(e => e.enabled).length),
@@ -55,6 +60,7 @@ export function LeverPanel({
     utsuroi:    state.firedTobiraIds.length > 0 ? String(state.firedTobiraIds.length) : undefined,
     // Inherit badge: any TOBIRA fired this session = security event occurred on paste surface
     inherit:    state.firedTobiraIds.length > 0 ? '⚑' : undefined,
+    collaborator: narrativeCount > 0 ? String(narrativeCount) : undefined,
   }
 
   return (

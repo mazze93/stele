@@ -112,27 +112,6 @@ export const PROJECTS: Project[] = [
     ],
     tesserae: [
       {
-        id: 'T-002',
-        module: 'scanPasteInput() in src/lib/tripwires.ts',
-        missingHalf: 'call site in InheritPanel paste handler (Group 4)',
-        blockedBy: 'security.ts and extraction-schema.ts must exist first (Group 1)',
-        group: 2,
-      },
-      {
-        id: 'T-004',
-        module: 'gate() in src/lib/security.ts',
-        missingHalf: 'import and call in InheritPanel before any API call',
-        blockedBy: 'InheritPanel does not exist yet (Group 4)',
-        group: 4,
-      },
-      {
-        id: 'T-005',
-        module: 'validatePatch() in src/lib/extraction-schema.ts',
-        missingHalf: 'import and call in extractor.ts response handler',
-        blockedBy: 'extractor.ts does not exist yet (Group 4)',
-        group: 4,
-      },
-      {
         id: 'T-006',
         module: 'scanExtractionResponse() in src/lib/tripwires.ts',
         missingHalf: 'import and call in extractor.ts on API response payload before validatePatch()',
