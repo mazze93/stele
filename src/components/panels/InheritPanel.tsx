@@ -5,7 +5,7 @@
 
 import { useState } from 'react'
 import type { DirectiveState } from '@/lib/types'
-import type { IntegrityState } from '@/lib/integrity'
+import type { IntegrityState, StateTransition } from '@/lib/integrity'
 import { INTEGRITY_STATES } from '@/lib/integrity'
 import { gate } from '@/lib/security'
 import type { GateResult } from '@/lib/security'
@@ -135,6 +135,30 @@ export function InheritPanel({
       setStatus('error')
       setErrorMsg(err instanceof Error ? err.message : 'Extraction failed')
       return
+    }
+
+    // T-006: YUGAMI/TESSITURA scan of the API response payload
+    const responseScan = extractResult.scanResult
+    if (responseScan.fired.length > 0) {
+      const ORDER: Record<string, number> = { UNHEIMLICH: 1, WABI: 2, 'EPOCHÉ': 3 }
+      let recTrans: StateTransition | null = null
+      for (const t of responseScan.fired) {
+        if ((ORDER[t.transition] ?? -1) > (recTrans ? ORDER[recTrans] : -1))
+          recTrans = t.transition
+      }
+      const responseGateResult: GateResult = {
+        blocked:               recTrans === 'EPOCHÉ' || recTrans === 'WABI',
+        scanResult:            responseScan,
+        recommendedTransition: recTrans,
+        findings:              responseScan.fired.map(t => `[${t.auditCode}] ${t.message}`),
+        charCount:             extractResult.rawResponse.length,
+      }
+      onGateResult(responseGateResult)
+      if (responseGateResult.blocked) {
+        setGateResult(responseGateResult)
+        setStatus('blocked')
+        return
+      }
     }
 
     setValidation(extractResult.validation)

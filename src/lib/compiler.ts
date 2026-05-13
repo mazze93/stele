@@ -411,6 +411,16 @@ function compileProjectMD(state: DirectiveState, projects: Project[]): string {
   lines.push(postureMeta.description)
   lines.push('', '---', '')
 
+  // Question hygiene — fires at compile time, not runtime. Catches task descriptions
+  // that have drifted into openQuestions. Non-blocking: warn and continue.
+  for (const q of p.openQuestions) {
+    const isQuestion          = q.trim().endsWith('?')
+    const hasDecisionLanguage = /\bvs\.?\b|\bor\b|whether|should|how to\b/i.test(q)
+    if (!isQuestion && !hasDecisionLanguage) {
+      console.warn(`[STELE] openQuestion looks like a task: "${q.slice(0, 72)}…"`)
+    }
+  }
+
   // Narrative fields — runtime overlay takes precedence over static project data
   const overlay = state.projectNarratives?.[p.id] ?? {}
   const identity           = overlay.identity           ?? p.identity

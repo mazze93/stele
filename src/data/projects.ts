@@ -104,20 +104,12 @@ export const PROJECTS: Project[] = [
       'CSS hex values hardcoded in component code — use CSS vars only',
     ],
     openQuestions: [
-      'Custom modes: SessionMode union → CustomMode data registry in modes.ts — Group 5, not started',
-      'CollaboratorPanel: Claude-as-collaborator narrative extractor for project identity/philosophy fields — not started',
-      'InheritPanel: paste zone with TOBIRA gate, diff view, per-section confirm, EPOCHÉ lockout chrome — not started',
-      'extractor.ts: hardened API call, system prompt, response parser — not started',
-      'EPOCHÉ chrome: full UI lockout, red chrome, reset-only path, no override — not started',
+      'Should integrityHash upgrade from 32-bit djb2 to SHA-256 if audit hashes are compared programmatically? (T-009)',
+      'Should the tesserae field on Project be required or optional? compiler.ts uses optional chain but type declares required. (T-010)',
+      'bundle.html: vite-plugin-singlefile not yet wired — is single-file output a release requirement?',
+      'User mode fork UI: state.userModes exists but there is no create/fork surface in the UI yet.',
     ],
     tesserae: [
-      {
-        id: 'T-006',
-        module: 'scanExtractionResponse() in src/lib/tripwires.ts',
-        missingHalf: 'import and call in extractor.ts on API response payload before validatePatch()',
-        blockedBy: 'extractor.ts does not exist yet (Group 4)',
-        group: 4,
-      },
       {
         id: 'T-009',
         module: 'integrityHash() in src/lib/integrity.ts — 32-bit djb2',

@@ -6,6 +6,8 @@
 import { z } from 'zod'
 import { validatePatch } from './extraction-schema'
 import type { ValidationResult, DirectiveStatePatch } from './extraction-schema'
+import { scanExtractionResponse } from './tripwires'
+import type { ScanResult } from './tripwires'
 
 const ANTHROPIC_ENDPOINT = 'https://api.anthropic.com/v1/messages'
 const MODEL = 'claude-sonnet-4-20250514'
@@ -18,6 +20,7 @@ export type ExtractorResult = {
   patch:       DirectiveStatePatch
   validation:  ValidationResult
   rawResponse: string
+  scanResult:  ScanResult   // T-006: YUGAMI + TESSITURA pass on API response payload
 }
 
 export type NarrativeFields = {
@@ -78,10 +81,11 @@ export async function extractDirectivePatch(
   }, signal)
 
   const rawResponse = parseEnvelopeText(raw)
+  const scanResult  = scanExtractionResponse(rawResponse)
   const parsed      = extractJson(rawResponse)
   const validation  = validatePatch(parsed)
 
-  return { patch: validation.patch, validation, rawResponse }
+  return { patch: validation.patch, validation, rawResponse, scanResult }
 }
 
 export type ProjectContext = {
