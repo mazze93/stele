@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "tsc -b && vite build",
+    "build": "tsc -b && vite build && mv dist/index.html dist/bundle.html",
     "lint": "eslint .",
     "preview": "vite preview"
   },
@@ -73,6 +73,7 @@
     "tailwindcss-animate": "^1.0.7",
     "typescript": "~6.0.2",
     "typescript-eslint": "^8.58.2",
-    "vite": "^8.0.10"
+    "vite": "^8.0.10",
+    "vite-plugin-singlefile": "^2.3.3"
   }
 }
