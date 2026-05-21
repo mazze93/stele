@@ -117,35 +117,45 @@ not a convention. Violating it opens an attack surface before the gate exists.
 
 ---
 
-## CURRENT STATE — Groups 1–5 complete
+## CURRENT STATE — v1.0.0, Groups 1–5 complete + T-006 wired
 
-All build groups are complete and wired. The "inert" period ended with Group 2.
+All build groups are complete and wired. Released at v1.0.0 (May 2026).
+`bundle.html` is the primary deliverable — a single self-contained file dropped into a Claude session.
 
 **Fully wired:**
 - `integrity.ts` — `escalate()` called from `App.handleGateResult`; transitions fire on every TOBIRA
 - `tripwires.ts` — `scanInput()` called from `security.gate()`; `gate()` called in InheritPanel and CollaboratorPanel before any API call
 - `audit.ts` — `appendEntry()` called via `handleAuditEntry` ref; `auditTrailRef` is a `useRef` (no re-render per entry)
-- `compiler.ts` — `integrityBlock()` emits ZANSHIN/UNHEIMLICH/WABI/EPOCHÉ language; EPOCHÉ replaces all other sections
-- `App.tsx` — EPOCHÉ lockout is a full UI replacement (glyph, fired TOBIRA list, reset-only path)
-- `InheritPanel.tsx` — paste zone, gate-then-extract, per-field confirm, EPOCHÉ/WABI branches distinct
+- `compiler.ts` — `integrityBlock()` emits ZANSHIN/UNHEIMLICH/WABI/EPOCHÉ language; EPOCHÉ replaces all other sections; compile-time warning on openQuestions that aren't genuine questions
+- `App.tsx` — EPOCHÉ lockout is a full UI replacement (glyph, fired TOBIRA list, reset-only path); `auditCount` state syncs on every `handleAuditEntry` call
+- `InheritPanel.tsx` — paste zone, gate-then-extract, per-field confirm, EPOCHÉ/WABI branches distinct; T-006 YUGAMI+TESSITURA pass on API response before `validatePatch()`
 - `CollaboratorPanel.tsx` — active-projects-only selector, philosopher-scribe narrative, editable fields, session-only persistence note
 - `modes.ts` — `CustomMode` registry; `BUILT_IN_MODES` protected; `findMode()` merges user modes
+- `extractor.ts` — T-006 wired: scans API response payload for YUGAMI+TESSITURA before returning to InheritPanel
 
 ---
 
 ## STACK
 
 ```
-React 19 · TypeScript · Vite · @dnd-kit/core + sortable
+React 19 · TypeScript · Vite · vite-plugin-singlefile · @dnd-kit/core + sortable
 Anthropic API (Group 4 only, gated behind security layer)
 Cipher Gothic design system — CSS vars, no hardcoded hex in components
 5 themes: cipher-gothic · secure-pride · operators-terminal · vellum-smoke · signal-blue
 ```
 
 Root: `~/🚀 PROJECTS/stele`
-Compile output: `bundle.html` — single self-contained file. Parcel removed; use
-`vite-plugin-singlefile` when this is built. Add to vite.config.ts:
-`import { viteSingleFile } from 'vite-plugin-singlefile'`
+Compile output: `dist/bundle.html` — single fully self-contained file (~418 KB, all JS/CSS inlined).
+`vite-plugin-singlefile` is wired in `vite.config.ts` — no manual inlining required.
+
+## COMMANDS
+
+```bash
+npm run dev        # vite dev server (localhost:5173)
+npm run build      # tsc -b && vite build → dist/bundle.html (fully self-contained)
+npm run preview    # preview dist/ locally
+npm run lint       # eslint
+```
 
 ---
 
@@ -166,6 +176,9 @@ Compile output: `bundle.html` — single self-contained file. Parcel removed; us
 
 ## OPEN QUESTIONS
 
-- `bundle.html` single-file output — use `vite-plugin-singlefile`; not yet wired
-- User mode fork UI — `state.userModes` exists in state but no UI to create/fork modes yet
-- `projectNarratives` copy-to-projects.ts workflow — currently manual; could add export helper
+- **T-009** — Should `integrityHash` upgrade from 32-bit djb2 to SHA-256 if audit hashes are compared programmatically?
+- **T-010** — Type inconsistency in policy resolution (see `src/policy/resolve.ts`)
+- User mode fork UI — `state.userModes` exists in state; no UI to create/fork modes yet
+- `projectNarratives` copy-to-projects.ts workflow — currently session-only; export helper not yet built
+
+Note: `bundle.html` single-file output is complete. `vite-plugin-singlefile` is wired in `vite.config.ts`.
