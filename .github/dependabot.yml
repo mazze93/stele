@@ -1,9 +1,41 @@
 version: 2
 updates:
-  - package-ecosystem: npm
-    directory: /
+  # 1. NPM / PNPM Ecosystem
+  - package-ecosystem: "npm"
+    directory: "/"
     schedule:
-      interval: weekly
-    open-pull-requests-limit: 5
-    labels:
-      - dependencies
+      interval: "weekly"
+      day: "monday"
+    # Grouping logic to reduce PR noise
+    groups:
+      # Group 1: Batch all security updates into one PR
+      security-batch:
+        applies-to: security-updates
+        patterns:
+          - "*"
+      # Group 2: Batch Astro and Cloudflare routine updates
+      core-frameworks:
+        patterns:
+          - "@astrojs/*"
+          - "astro"
+          - "wrangler"
+          - "@cloudflare/*"
+      # Group 3: Batch all other dev dependencies together
+      dev-tools:
+        dependency-type: "development"
+        exclude-patterns:
+          - "typescript" # Keep TS separate to monitor build breaks
+    # Ignore major version bumps for core packages to prevent unexpected breaking changes
+    ignore:
+      - dependency-name: "astro"
+        update-types: ["version-update:semver-major"]
+
+  # 2. GitHub Actions Ecosystem
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "monthly"
+    groups:
+      actions-batch:
+        patterns:
+          - "*"
