@@ -1,0 +1,201 @@
+// Starter models — replace with your own
+// This schema mirrors Stele's runtime type system, persisting what the browser
+// currently holds only in memory: audit trails, session state, and project registry.
+
+generator client {
+  provider = "prisma-client"
+  output   = "../generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// ─────────────────────────────────────────────
+// Enums — sourced directly from Stele's types.ts
+// ─────────────────────────────────────────────
+
+enum IntegrityState {
+  ZANSHIN    // remaining mind — alert wholeness, active readiness
+  UNHEIMLICH // the uncanny — familiar made strange
+  WABI       // honest diminishment — known imperfection, no shame
+  EPOCHE     // deliberate suspension — the plug pulled
+}
+
+enum PostureLevel {
+  MAX
+  HIGH
+  GUARDIAN
+  CREATIVE
+  RESEARCH
+  STANDARD
+}
+
+enum VerbosityLevel {
+  DENSE
+  STANDARD
+  EXPANDED
+}
+
+enum HygieneTrigger {
+  OFF
+  ON_COPY
+  TURN_BASED
+  MANUAL
+}
+
+enum AuditActionType {
+  SESSION_START
+  KOHAKU_EXTRACTION
+  TSUGI_APPLIED
+  KIRI_REJECTED
+  TOBIRA_FIRED
+  UTSUROI_TRANSITION
+  EPOCHE_ENTERED
+}
+
+// ─────────────────────────────────────────────
+// Project — mirrors Stele's Project registry
+// ─────────────────────────────────────────────
+
+model Project {
+  id          String       @id @default(cuid())
+  label       String
+  scope       String       @unique // SP, DR, STELE, etc.
+  stack       String
+  posture     PostureLevel
+  compliance  String[]     // GDPR, CCPA, SOGI, WCAG, IRB-adjacent…
+  hardStops   String[]
+  root        String?      // local filesystem path
+
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+
+  narrative     ProjectNarrative?
+  openQuestions OpenQuestion[]
+  tesserae      Tessera[]
+
+  @@index([posture])
+}
+
+// ─────────────────────────────────────────────
+// ProjectNarrative — AI-authored, developer-refined
+// ─────────────────────────────────────────────
+
+model ProjectNarrative {
+  id                  String   @id @default(cuid())
+  projectId           String   @unique
+  project             Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  identity            String?
+  philosophy          String?
+  buildSequencing     String?
+  unstatedConstraints String?
+
+  authoredAt  DateTime  @default(now())
+  refinedAt   DateTime?
+}
+
+// ─────────────────────────────────────────────
+// OpenQuestion — epistemic: design decision unresolved
+// ─────────────────────────────────────────────
+
+model OpenQuestion {
+  id         String    @id @default(cuid())
+  projectId  String
+  project    Project   @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  text        String
+  resolvedAt  DateTime?
+  resolution  String?
+  createdAt   DateTime  @default(now())
+
+  @@index([projectId, resolvedAt])
+}
+
+// ─────────────────────────────────────────────
+// Tessera — topological: thing exists, wiring dormant
+// ─────────────────────────────────────────────
+
+model Tessera {
+  id          String   @id @default(cuid())
+  projectId   String?
+  project     Project? @relation(fields: [projectId], references: [id])
+
+  code        String   @unique // T-009, T-010, etc.
+  module      String           // which module/function exists
+  missingHalf String           // what wiring is dormant
+  blockedBy   String?          // sequencing dependency
+  buildGroup  Int              // 1–5 build group that completes it
+
+  resolvedAt  DateTime?
+  createdAt   DateTime  @default(now())
+
+  @@index([buildGroup, resolvedAt])
+}
+
+// ─────────────────────────────────────────────
+// AgentSession — one complete Stele session
+// ─────────────────────────────────────────────
+
+model AgentSession {
+  id              String         @id @default(cuid())
+  sessionMode     String         // PLAN, BUILD, REVIEW, CAPTURE, custom
+  outputTarget    String         // claude-ai | claude-md-global | claude-md-project
+  verbosity       VerbosityLevel
+  hygieneTrigger  HygieneTrigger
+  hygieneAfterN   Int            @default(3)
+  activeProjectIds String[]      // matches Stele's DirectiveState.activeProjectIds
+
+  startedAt  DateTime  @default(now())
+  endedAt    DateTime?
+
+  auditTrail     AuditEntry[]
+  stateSnapshots StateSnapshot[]
+
+  @@index([startedAt])
+}
+
+// ─────────────────────────────────────────────
+// AuditEntry — append-only; invariant: never delete, never empty
+// ─────────────────────────────────────────────
+
+model AuditEntry {
+  id        String         @id @default(cuid())
+  sessionId String
+  session   AgentSession   @relation(fields: [sessionId], references: [id])
+
+  action          AuditActionType
+  tobiraId        String?   // which TOBIRA module fired (TW-001 … TW-013)
+  tobiraCode      String?   // audit code: KAPU-001, APOCRYPHA-009, etc.
+  fromState       IntegrityState?
+  toState         IntegrityState?
+  fieldsExtracted String[]
+  fieldsRejected  String[]
+  secretsDetected Boolean   @default(false) // boolean ONLY — never log what was found
+  integrityHash   String    // djb2 32-bit; session-local, display-only
+
+  timestamp DateTime @default(now())
+
+  @@index([sessionId, timestamp])
+  @@index([action, timestamp])
+  @@index([tobiraId])
+}
+
+// ─────────────────────────────────────────────
+// StateSnapshot — final DirectiveState per session; enables cross-session drift analysis
+// ─────────────────────────────────────────────
+
+model StateSnapshot {
+  id             String         @id @default(cuid())
+  sessionId      String
+  session        AgentSession   @relation(fields: [sessionId], references: [id])
+
+  integrityState  IntegrityState
+  firedTobiraIds  String[]
+  themeId         String?
+
+  capturedAt DateTime @default(now())
+
+  @@index([integrityState, capturedAt])
+}
