@@ -1,6 +1,7 @@
 // === UTSUROI AUDIT TRAIL ===
 // Always-on. No opt-out. Session-scoped.
 // secretsDetected is boolean only — never log what was found.
+// integrityHash is SHA-256 over prevHash + event content — a tamper-evident chain.
 
 import type { IntegrityState } from './integrity'
 
@@ -34,19 +35,58 @@ export type AuditTrail = {
   currentState: IntegrityState
 }
 
+export type AuditExtras = Omit<Partial<AuditEntry>, 'integrityHash' | 'timestamp' | 'action' | 'sessionId'>
+
+const GENESIS_HASH = '0'.repeat(64)
+
+async function sha256(input: string): Promise<string> {
+  const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(input))
+  return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2, '0')).join('')
+}
+
+function chainInput(prevHash: string, action: AuditAction, extras: AuditExtras, sessionId: string, ts: string): string {
+  return [
+    prevHash,
+    action,
+    extras.tobiraId ?? '',
+    extras.tobiraCode ?? '',
+    extras.fromState ?? '',
+    extras.toState ?? '',
+    String(extras.secretsDetected ?? ''),
+    extras.fieldsExtracted?.join(',') ?? '',
+    extras.fieldsRejected?.join(',') ?? '',
+    sessionId,
+    ts,
+  ].join('|')
+}
+
 export function createAuditTrail(sessionId: string): AuditTrail {
   return { sessionId, sessionStart: new Date().toISOString(), entries: [], currentState: 'ZANSHIN' }
 }
 
-export function appendEntry(
+export async function appendEntry(
   trail: AuditTrail,
   action: AuditAction,
-  extras: Partial<AuditEntry> & { integrityHash: string },
-): AuditTrail {
+  extras: AuditExtras = {},
+): Promise<AuditTrail> {
+  const prevHash = trail.entries.at(-1)?.integrityHash ?? GENESIS_HASH
+  const ts = new Date().toISOString()
+  const hash = await sha256(chainInput(prevHash, action, extras, trail.sessionId, ts))
   return {
     ...trail,
-    entries: [...trail.entries, { timestamp: new Date().toISOString(), action, sessionId: trail.sessionId, ...extras }],
+    entries: [...trail.entries, { timestamp: ts, action, sessionId: trail.sessionId, ...extras, integrityHash: hash }],
   }
+}
+
+export async function verifyChain(trail: AuditTrail): Promise<boolean> {
+  let prevHash = GENESIS_HASH
+  for (const entry of trail.entries) {
+    const { integrityHash, timestamp, action, sessionId: _sid, ...rest } = entry
+    const expected = await sha256(chainInput(prevHash, action, rest, trail.sessionId, timestamp))
+    if (expected !== integrityHash) return false
+    prevHash = integrityHash
+  }
+  return true
 }
 
 export function renderAuditMarkdown(trail: AuditTrail): string {
@@ -59,11 +99,11 @@ export function renderAuditMarkdown(trail: AuditTrail): string {
     '|------|--------|--------|------|',
   ]
   for (const e of trail.entries) {
-    lines.push(`| ${e.timestamp.split('T')[1]?.split('.')[0] ?? '—'} | ${e.action} | ${e.tobiraCode ?? '—'} | \`${e.integrityHash}\` |`)
+    lines.push(`| ${e.timestamp.split('T')[1]?.split('.')[0] ?? '—'} | ${e.action} | ${e.tobiraCode ?? '—'} | \`${e.integrityHash.slice(0, 16)}…\` |`)
   }
   return lines.join('\n')
 }
 
 export function renderAuditInline(trail: AuditTrail, hash: string): string {
-  return `UTSUROI [${trail.sessionId} · ${trail.currentState} · ${hash}]`
+  return `UTSUROI [${trail.sessionId} · ${trail.currentState} · ${hash.slice(0, 12)}]`
 }
