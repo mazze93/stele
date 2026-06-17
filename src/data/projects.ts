@@ -104,7 +104,6 @@ export const PROJECTS: Project[] = [
       'CSS hex values hardcoded in component code — use CSS vars only',
     ],
     openQuestions: [
-      'Should integrityHash upgrade from 32-bit djb2 to SHA-256 if audit hashes are compared programmatically? (T-009)',
       'Should the tesserae field on Project be required or optional? compiler.ts uses optional chain but type declares required. (T-010)',
       'bundle.html: vite-plugin-singlefile not yet wired — is single-file output a release requirement?',
       'User mode fork UI: state.userModes exists but there is no create/fork surface in the UI yet.',
@@ -112,8 +111,8 @@ export const PROJECTS: Project[] = [
     tesserae: [
       {
         id: 'T-009',
-        module: 'integrityHash() in src/lib/integrity.ts — 32-bit djb2',
-        missingHalf: 'upgrade to crypto.subtle.digest SHA-256 if audit hashes are compared programmatically; current strength adequate for human-read display',
+        module: 'audit.ts appendEntry() — SHA-256 hash chain (RESOLVED)',
+        missingHalf: 'resolved: appendEntry() now uses crypto.subtle SHA-256 over prevHash|action|content|sessionId|timestamp; verifyChain() validates full chain integrity',
         group: 2,
       },
       {

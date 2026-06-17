@@ -3,9 +3,9 @@ import type { DirectiveState } from '@/lib/types'
 import type { IntegrityState } from '@/lib/integrity'
 import type { ThemeId } from '@/data/themes'
 import { buildDefaultState, applySessionPreset } from '@/data/defaults'
-import { INTEGRITY_STATES, escalate, integrityHash } from '@/lib/integrity'
+import { INTEGRITY_STATES, escalate } from '@/lib/integrity'
 import { createAuditTrail, appendEntry } from '@/lib/audit'
-import type { AuditTrail, AuditAction, AuditEntry } from '@/lib/audit'
+import type { AuditTrail, AuditAction, AuditExtras } from '@/lib/audit'
 import type { GateResult } from '@/lib/security'
 import type { DirectiveStatePatch } from '@/lib/extraction-schema'
 import type { NarrativeFields } from '@/lib/extractor'
@@ -18,7 +18,7 @@ import { OutputPanel } from '@/components/OutputPanel'
 import { MobileConfig } from '@/components/MobileConfig'
 import './App.css'
 
-type AuditExtras = Omit<Partial<AuditEntry>, 'integrityHash' | 'timestamp' | 'action' | 'sessionId'>
+
 
 function buildSession() {
   const state = buildDefaultState()
@@ -47,39 +47,37 @@ export default function App() {
   useEffect(() => {
     if (sessionStarted.current) return    // StrictMode second-fire guard
     sessionStarted.current = true         // set before any state call or async boundary
-    auditTrailRef.current = appendEntry(auditTrailRef.current, 'session-start', {
-      integrityHash: integrityHash('ZANSHIN', session.state.sessionId, 0),
+    appendEntry(auditTrailRef.current, 'session-start').then(trail => {
+      auditTrailRef.current = trail
     })
   }, [])  // eslint-disable-line react-hooks/exhaustive-deps
 
   function applyPreset(mode: string) { setState(prev => applySessionPreset(prev, mode)) }
 
-  function handleGateResult(gateResult: GateResult) {
+  async function handleGateResult(gateResult: GateResult) {
     const { scanResult, recommendedTransition } = gateResult
     if (!recommendedTransition) return  // clean input — latching invariant, no de-escalation
 
     const currentIntegrity = state.integrityState as IntegrityState
     const nextIntegrity    = escalate(currentIntegrity, recommendedTransition)
     const nextFiredIds     = [...new Set([...state.firedTobiraIds, ...scanResult.fired.map(t => t.id)])]
-    const hash             = integrityHash(nextIntegrity, state.sessionId, 0)
 
     // Snapshot invariant: use nextIntegrity everywhere below — never state.integrityState
     setState(prev => ({ ...prev, integrityState: nextIntegrity, firedTobiraIds: nextFiredIds }))
 
-    // Direct ref mutation — no state update for audit entries
+    // Direct ref mutation — no state update for audit entries; await chain in sequence
     for (const tobira of scanResult.fired) {
-      auditTrailRef.current = appendEntry(auditTrailRef.current, 'tobira-fired', {
+      auditTrailRef.current = await appendEntry(auditTrailRef.current, 'tobira-fired', {
         tobiraId: tobira.id,
         tobiraCode: tobira.auditCode,
-        integrityHash: hash,
         secretsDetected: scanResult.secretsDetected,
       })
     }
     if (nextIntegrity !== currentIntegrity) {
-      auditTrailRef.current = appendEntry(
+      auditTrailRef.current = await appendEntry(
         auditTrailRef.current,
         nextIntegrity === 'EPOCHÉ' ? 'epoche-entered' : 'utsuroi-transition',
-        { fromState: currentIntegrity, toState: nextIntegrity, integrityHash: hash }
+        { fromState: currentIntegrity, toState: nextIntegrity }
       )
       auditTrailRef.current = { ...auditTrailRef.current, currentState: nextIntegrity }
     }
@@ -113,13 +111,8 @@ export default function App() {
   }
 
   // Appends to ref — no re-render. Uses ref's currentState to avoid stale closure.
-  function handleAuditEntry(action: AuditAction, extras: AuditExtras = {}) {
-    const hash = integrityHash(
-      auditTrailRef.current.currentState,
-      auditTrailRef.current.sessionId,
-      Date.now(),
-    )
-    auditTrailRef.current = appendEntry(auditTrailRef.current, action, { ...extras, integrityHash: hash })
+  async function handleAuditEntry(action: AuditAction, extras: AuditExtras = {}) {
+    auditTrailRef.current = await appendEntry(auditTrailRef.current, action, extras)
     setAuditCount(auditTrailRef.current.entries.length)
   }
 
