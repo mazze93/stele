@@ -1,5 +1,14 @@
 # STELE
 
+**A harness-level integrity controller for high-risk Claude sessions.** One offline HTML file that:
+
+- compiles project configuration into governed instruction sets (*egregores*) carrying compliance posture, hard stops, and design language into every session
+- watches inputs and extraction responses with 13 deterministic tripwires — prompt injection, authority impersonation, hidden instructions, credential leaks, schema drift
+- degrades monotonically when integrity is threatened: capabilities shrink, and past a threshold the session locks itself rather than continue compromised
+- keeps a SHA-256 hash-chained audit trail of every event — tamper-evident, exportable, tested
+
+**Jump to:** [Getting Started](#getting-started) · [Architecture](#architecture) · [The Lexicon](#the-lexicon) · [Design decisions (ADRs)](docs/adr/)
+
 > *The stele is the instrument. The egregore is what the inscription becomes when received.*
 
 ---
