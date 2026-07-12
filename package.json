@@ -7,7 +7,8 @@
     "dev": "vite",
     "build": "tsc -b && vite build && mv dist/index.html dist/bundle.html",
     "lint": "eslint .",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "test": "vitest run"
   },
   "dependencies": {
     "@dnd-kit/core": "^6.3.1",
@@ -59,6 +60,7 @@
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
+    "@tailwindcss/postcss": "^4.3.2",
     "@types/node": "^26.0.0",
     "@types/react": "^19.2.14",
     "@types/react-dom": "^19.2.3",
@@ -74,6 +76,7 @@
     "typescript": "~6.0.2",
     "typescript-eslint": "^8.61.1",
     "vite": "^8.0.16",
-    "vite-plugin-singlefile": "^2.3.3"
+    "vite-plugin-singlefile": "^2.3.3",
+    "vitest": "^4.1.10"
   }
 }
