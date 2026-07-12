@@ -39,3 +39,4 @@ stele.html
 *.njsproj
 *.sln
 *.sw?
+site/deploy/
