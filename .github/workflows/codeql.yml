@@ -1,0 +1,27 @@
+# CodeQL analysis — satisfies the branch ruleset's required Code Scanning
+# results (the rule predated any configured scanner, which blocked ALL merges;
+# see stratum data/stele-trace.jsonl st-001).
+name: codeql
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  schedule:
+    - cron: "17 6 * * 1"
+jobs:
+  analyze:
+    name: Analyze (javascript-typescript)
+    runs-on: ubuntu-latest
+    permissions:
+      security-events: write
+      contents: read
+      actions: read
+    steps:
+      - uses: actions/checkout@v6
+      - uses: github/codeql-action/init@v4
+        with:
+          languages: javascript-typescript
+      - uses: github/codeql-action/analyze@v4
+        with:
+          category: "/language:javascript-typescript"
