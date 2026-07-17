@@ -119,8 +119,23 @@ not a convention. Violating it opens an attack surface before the gate exists.
 
 ## CURRENT STATE — v1.0.0, Groups 1–5 complete + T-006 wired
 
-All build groups are complete and wired. Released at v1.0.0 (May 2026).
-`bundle.html` is the primary deliverable — a single self-contained file dropped into a Claude session.
+All build groups are complete and wired. Released at v1.0.0 (May 2026;
+`src/lib/version.ts`). `bundle.html` is the primary deliverable — a single
+self-contained file dropped into a Claude session.
+
+Grown since the v1.0.0 build groups (all post-date the sequencing above):
+- `stele-core/` — separate Node service (own package.json, npm): Prisma
+  Postgres persistence layer for the audit ledger. Express-style routes in
+  `stele-core/src/routes/` (sessions, projects, drift), Zod schemas in
+  `stele-core/src/schemas.ts`, migrations + seed under `stele-core/prisma/`.
+- `site/` — stele.mazzeleczzare.com landing page + hosted app, deployed to
+  the `stele` Cloudflare Pages project by direct upload (see `site/README.md`;
+  `deploy/` is assembled at deploy time, never committed).
+- Tests — vitest suites in `src/lib/__tests__/` covering security, tripwires,
+  integrity, audit. Run before any security-layer change.
+- `docs/adr/` — ADRs 0001–0003 (monotonic escalation, deterministic tripwires
+  over model judges, boolean-only secret detection) — the written rationale
+  behind the Architecture Constraints below.
 
 **Fully wired:**
 - `integrity.ts` — `escalate()` called from `App.handleGateResult`; transitions fire on every TOBIRA
@@ -144,18 +159,24 @@ Cipher Gothic design system — CSS vars, no hardcoded hex in components
 5 themes: cipher-gothic · secure-pride · operators-terminal · vellum-smoke · signal-blue
 ```
 
-Root: `~/🚀 PROJECTS/stele`
-Compile output: `dist/bundle.html` — single fully self-contained file (~418 KB, all JS/CSS inlined).
+Root: `~/Projects/tools/stele` (workspace v2, 2026-07-15 — see `~/Projects/WORKSPACE.md`)
+Compile output: `dist/bundle.html` — single fully self-contained file (all JS/CSS inlined).
 `vite-plugin-singlefile` is wired in `vite.config.ts` — no manual inlining required.
 
 ## COMMANDS
 
+Package manager is **pnpm** (pnpm-lock.yaml — don't introduce npm/yarn lockfiles).
+
 ```bash
-npm run dev        # vite dev server (localhost:5173)
-npm run build      # tsc -b && vite build → dist/bundle.html (fully self-contained)
-npm run preview    # preview dist/ locally
-npm run lint       # eslint
+pnpm dev           # vite dev server (localhost:5173)
+pnpm build         # tsc -b && vite build && mv dist/index.html → dist/bundle.html
+pnpm preview       # preview dist/ locally
+pnpm lint          # eslint
+pnpm test          # vitest run — src/lib/__tests__ (security, tripwires, integrity, audit)
 ```
+
+`stele-core/` is its own package (npm, `stele-core/package-lock.json`):
+`npm run dev` (tsx watch) / `npm start` from inside that directory.
 
 ---
 
@@ -176,9 +197,9 @@ npm run lint       # eslint
 
 ## OPEN QUESTIONS
 
-- **T-009** — Should `integrityHash` upgrade from 32-bit djb2 to SHA-256 if audit hashes are compared programmatically?
-- **T-010** — Type inconsistency in policy resolution (see `src/policy/resolve.ts`)
 - User mode fork UI — `state.userModes` exists in state; no UI to create/fork modes yet
-- `projectNarratives` copy-to-projects.ts workflow — currently session-only; export helper not yet built
+- `projectNarratives` workflow — `src/lib/narrativeExport.ts` exists; confirm whether the copy-to-projects.ts loop is fully closed or still session-only
 
-Note: `bundle.html` single-file output is complete. `vite-plugin-singlefile` is wired in `vite.config.ts`.
+Resolved / retired (2026-07-15 audit):
+- ~~T-009~~ — audit trail is SHA-256 hash-chained (`src/lib/audit.ts`); djb2 question is moot.
+- ~~T-010~~ — referenced `src/policy/resolve.ts` no longer exists in this repo; re-file against the current home of policy resolution if the type inconsistency resurfaces.
