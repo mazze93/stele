@@ -53,7 +53,10 @@ export function escalate(current: IntegrityState, transition: StateTransition): 
   return ORDER[Math.max(ORDER.indexOf(current), ORDER.indexOf(transition))]
 }
 
-export function integrityHash(state: IntegrityState, sessionId: string, ts: number): string {
+// Non-cryptographic 32-bit display stamp for compiled-output headers.
+// NOT tamper-evident — the audit trail hash chain (audit.ts, SHA-256) is
+// the integrity mechanism. Renamed from integrityHash to avoid overclaiming.
+export function sessionStamp(state: IntegrityState, sessionId: string, ts: number): string {
   const raw = `${state}:${sessionId}:${ts}`
   let h = 0
   for (let i = 0; i < raw.length; i++) { h = ((h << 5) - h) + raw.charCodeAt(i); h |= 0 }
