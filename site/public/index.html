@@ -1,0 +1,427 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Stele — the directive compiler</title>
+<meta name="description" content="Memory is the model's. The directive is yours. Stele compiles project configuration into governed, model-agnostic instruction sets — with integrity tripwires and a tamper-evident audit trail.">
+<style>
+@font-face {
+  font-family: 'Cinzel';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url(/fonts/cinzel-400-normal.woff2) format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+@font-face {
+  font-family: 'Cinzel';
+  font-style: normal;
+  font-weight: 600;
+  font-display: swap;
+  src: url(/fonts/cinzel-600-normal.woff2) format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+@font-face {
+  font-family: 'Cinzel';
+  font-style: normal;
+  font-weight: 800;
+  font-display: swap;
+  src: url(/fonts/cinzel-800-normal.woff2) format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+@font-face {
+  font-family: 'Hanken Grotesk';
+  font-style: italic;
+  font-weight: 400;
+  font-display: swap;
+  src: url(/fonts/hankengrotesk-400-italic.woff2) format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+@font-face {
+  font-family: 'Hanken Grotesk';
+  font-style: normal;
+  font-weight: 300;
+  font-display: swap;
+  src: url(/fonts/hankengrotesk-300-normal.woff2) format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+@font-face {
+  font-family: 'Hanken Grotesk';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url(/fonts/hankengrotesk-400-normal.woff2) format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+@font-face {
+  font-family: 'Hanken Grotesk';
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: url(/fonts/hankengrotesk-500-normal.woff2) format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+@font-face {
+  font-family: 'Hanken Grotesk';
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url(/fonts/hankengrotesk-700-normal.woff2) format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+@font-face {
+  font-family: 'IBM Plex Mono';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url(/fonts/ibmplexmono-400-normal.woff2) format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+@font-face {
+  font-family: 'IBM Plex Mono';
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: url(/fonts/ibmplexmono-500-normal.woff2) format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+@font-face {
+  font-family: 'IBM Plex Mono';
+  font-style: normal;
+  font-weight: 600;
+  font-display: swap;
+  src: url(/fonts/ibmplexmono-600-normal.woff2) format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+</style>
+<style>
+/* ============================================================
+   STELE — Hybrid "Inscribed Compile"
+   Refined limestone editorial monument + a live compiling
+   carved-basalt tablet as the hero centerpiece.
+   Display: Cinzel · Body: Hanken Grotesk · Compiler: IBM Plex Mono
+   ============================================================ */
+
+:root{
+  /* light world — limestone monument */
+  --stone:        #e9e3d5;
+  --stone-deep:   #ded5c2;
+  --ink:          #211e1a;
+  --ink-soft:     #4d473d;
+  --cinnabar:     #a8392a;
+  --cinnabar-deep:#8a2c20;
+  --gold:         #8c6a3a;
+  --slab-edge:    #b6ab93;
+  --on-cinnabar:  #f6efe2;
+
+  /* carved-basalt tablet (dark inset) */
+  --tablet:       #1c1a17;
+  --tablet-2:     #24211c;
+  --tablet-line:  #3a352c;
+  --dot:          #46402f;
+  --parchment:    #ded3bd;   /* text inlaid on basalt */
+  --parch-dim:    #9c907b;   /* muted on basalt (AA) */
+  --cinnabar-lit: #db7c63;   /* cinnabar on dark (AA ~4.7:1) */
+  --bronze:       #cda35e;   /* compiled / sealed state */
+
+  --maxw: 1180px;
+  --ease: cubic-bezier(.22,.61,.36,1);
+}
+
+*{box-sizing:border-box;}
+html{scroll-behavior:smooth;}
+body{
+  margin:0;
+  background:
+    radial-gradient(120% 90% at 80% -10%, #f1ecdf 0%, transparent 55%),
+    radial-gradient(90% 70% at -10% 110%, #ddd3bf 0%, transparent 50%),
+    var(--stone);
+  color:var(--ink);
+  font-family:"Hanken Grotesk",system-ui,sans-serif;line-height:1.62;
+  -webkit-font-smoothing:antialiased;overflow-x:hidden;
+}
+body::before{ /* grain — decorative */
+  content:"";position:fixed;inset:0;pointer-events:none;z-index:9;
+  opacity:.05;mix-blend-mode:multiply;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+.wrap{max-width:var(--maxw);margin:0 auto;padding:0 clamp(20px,5vw,56px);}
+
+.eyebrow{font-family:"Cinzel",serif;font-weight:600;font-size:.72rem;
+  letter-spacing:.42em;text-transform:uppercase;color:var(--cinnabar-deep);}
+h1,h2,h3{font-family:"Cinzel",serif;font-weight:800;line-height:1.04;margin:0;}
+p{margin:0 0 1.1em;}
+.mono{font-family:"IBM Plex Mono",monospace;}
+
+/* ============================================================ MASTHEAD */
+header.site{display:flex;align-items:center;justify-content:space-between;
+  padding-block:26px;border-bottom:1px solid rgba(33,30,26,.14);}
+.mark{display:flex;align-items:center;gap:12px;font-family:"Cinzel",serif;font-weight:800;
+  font-size:1.3rem;letter-spacing:.32em;text-indent:.32em;color:var(--ink);}
+.mark small{font-family:"IBM Plex Mono",monospace;font-weight:500;font-size:.62rem;
+  letter-spacing:.18em;color:var(--ink-soft);text-indent:0;}
+nav.site a{font-size:.82rem;letter-spacing:.05em;color:var(--ink-soft);text-decoration:none;
+  margin-left:30px;transition:color .25s var(--ease);}
+nav.site a:hover,nav.site a:focus-visible{color:var(--cinnabar-deep);}
+nav.site a:last-child{color:var(--ink);border-bottom:2px solid var(--cinnabar);padding-bottom:3px;}
+
+/* ============================================================ HERO */
+.hero{display:grid;grid-template-columns:1fr 1.04fr;gap:clamp(28px,5vw,68px);
+  align-items:center;padding-block:clamp(54px,8vw,110px);}
+.hero h1{font-size:clamp(2.8rem,6.6vw,5.1rem);letter-spacing:.01em;margin-bottom:.34em;}
+.hero h1 .rub{color:var(--cinnabar);display:block;font-weight:600;text-shadow:0 1px 0 rgba(255,255,255,.45);}
+.hero h1 .thin{font-weight:400;color:var(--ink);}
+.hero .sub{font-size:clamp(1.05rem,1.6vw,1.22rem);color:var(--ink-soft);max-width:42ch;}
+.hero .sub b{color:var(--ink);font-weight:700;}
+.specrow{display:flex;gap:9px;flex-wrap:wrap;font-family:"IBM Plex Mono",monospace;
+  font-size:.72rem;margin:1.7em 0;}
+.specrow span{border:1px solid rgba(33,30,26,.22);border-radius:4px;padding:5px 11px;color:var(--ink-soft);}
+.specrow span b{color:var(--cinnabar-deep);font-weight:500;}
+
+.cta-row{display:flex;gap:16px;flex-wrap:wrap;}
+.btn{font-family:"Cinzel",serif;font-weight:600;font-size:.82rem;letter-spacing:.16em;
+  text-transform:uppercase;text-decoration:none;padding:15px 30px;
+  transition:transform .25s var(--ease),box-shadow .25s var(--ease),border-color .25s,color .25s;}
+.btn-primary{background:var(--cinnabar);color:var(--on-cinnabar);box-shadow:0 6px 22px -10px rgba(138,44,32,.8);}
+.btn-primary:hover,.btn-primary:focus-visible{transform:translateY(-2px);box-shadow:0 12px 30px -10px rgba(138,44,32,.85);}
+.btn-ghost{border:1px solid rgba(33,30,26,.4);color:var(--ink);}
+.btn-ghost:hover,.btn-ghost:focus-visible{border-color:var(--cinnabar);color:var(--cinnabar-deep);}
+
+/* ---------- the compiling basalt tablet (centerpiece) ---------- */
+.tablet{
+  background:linear-gradient(180deg,var(--tablet-2),var(--tablet));
+  border:1px solid #000;border-radius:7px 7px 4px 4px;overflow:hidden;
+  box-shadow:
+    inset 0 1px 0 rgba(222,211,189,.08),
+    inset 0 -22px 38px -26px #000,
+    20px 28px 56px -30px rgba(33,30,26,.6);
+  isolation:isolate;
+}
+.tablet .lid{display:flex;align-items:center;gap:9px;padding:12px 16px;
+  border-bottom:1px solid var(--tablet-line);font-family:"IBM Plex Mono",monospace;
+  font-size:.72rem;color:var(--parch-dim);}
+.tablet .lid i{width:9px;height:9px;border-radius:50%;background:var(--dot);font-style:normal;}
+.tablet .lid i.live{background:var(--cinnabar-lit);box-shadow:0 0 0 3px rgba(219,124,99,.16);}
+.tablet .lid .status{margin-left:auto;color:var(--cinnabar-lit);letter-spacing:.04em;}
+.tablet .lid .status.done{color:var(--bronze);}
+.tablet .cols{display:grid;grid-template-columns:1fr auto 1fr;}
+.tablet .pane{padding:18px 18px 24px;font-family:"IBM Plex Mono",monospace;
+  font-size:.77rem;line-height:1.9;min-height:236px;color:var(--parchment);}
+.tablet .pane.in{border-right:1px solid var(--tablet-line);}
+.tablet .label{font-size:.6rem;letter-spacing:.2em;text-transform:uppercase;
+  color:var(--parch-dim);margin-bottom:13px;}
+.tablet .line{white-space:pre;display:block;}
+.tablet .k{color:var(--cinnabar-lit);}
+.tablet .g{color:var(--bronze);}
+.tablet .dim{color:var(--parch-dim);}
+.tablet .arrow{display:flex;align-items:center;justify-content:center;padding:0 7px;
+  color:var(--cinnabar-lit);font-size:1.05rem;
+  background:linear-gradient(180deg,transparent,rgba(219,124,99,.07),transparent);}
+.tablet .out .line{opacity:0;transform:translateX(-4px);}
+.tablet.compiled .out .line{opacity:1;transform:none;
+  transition:opacity .35s var(--ease),transform .35s var(--ease);}
+.tablet.compiled .out .line:nth-child(2){transition-delay:.05s;}
+.tablet.compiled .out .line:nth-child(3){transition-delay:.12s;}
+.tablet.compiled .out .line:nth-child(4){transition-delay:.19s;}
+.tablet.compiled .out .line:nth-child(5){transition-delay:.26s;}
+.tablet.compiled .out .line:nth-child(6){transition-delay:.33s;}
+.tablet.compiled .out .line:nth-child(7){transition-delay:.4s;}
+.tablet .seal{display:flex;align-items:center;gap:9px;padding:11px 16px;
+  border-top:1px solid var(--tablet-line);font-family:"IBM Plex Mono",monospace;
+  font-size:.68rem;letter-spacing:.14em;text-transform:uppercase;color:var(--parch-dim);}
+.tablet .seal b{color:var(--bronze);font-weight:500;}
+
+/* ============================================================ INSIGHT */
+.insight{border-block:1px solid rgba(33,30,26,.16);padding-block:clamp(50px,7vw,90px);}
+.insight .grid{display:grid;grid-template-columns:.82fr 1.18fr;gap:clamp(28px,5vw,64px);align-items:start;}
+.insight h2{font-size:clamp(1.7rem,3.4vw,2.7rem);letter-spacing:.01em;}
+.insight h2 em{font-style:italic;color:var(--cinnabar-deep);font-weight:600;}
+.insight .body{font-size:clamp(1.02rem,1.4vw,1.16rem);color:var(--ink-soft);max-width:54ch;}
+.insight .body strong{color:var(--ink);font-weight:700;}
+
+/* ============================================================ HOW */
+.how{padding-block:clamp(54px,8vw,102px);}
+.how .head{display:flex;align-items:baseline;gap:18px;margin-bottom:clamp(34px,5vw,56px);}
+.how h2{font-size:clamp(1.6rem,3vw,2.4rem);}
+.steps{display:grid;grid-template-columns:repeat(3,1fr);gap:clamp(20px,3vw,40px);}
+.step{position:relative;padding-top:30px;}
+.step:nth-child(2){margin-top:34px;}
+.step:nth-child(3){margin-top:14px;}
+.step .num{font-family:"Cinzel",serif;font-weight:800;font-size:2.4rem;color:var(--cinnabar);line-height:1;}
+.step h3{font-size:1.16rem;letter-spacing:.04em;margin:.5em 0 .35em;}
+.step p{font-size:.97rem;color:var(--ink-soft);margin:0;}
+.step::before{content:"";position:absolute;top:6px;left:0;width:34px;height:2px;background:var(--gold);}
+
+/* ============================================================ CLOSE */
+.close{text-align:center;padding-block:clamp(68px,9vw,126px);}
+.close .eyebrow{display:block;margin-bottom:1.2em;}
+.close h2{font-size:clamp(2rem,5vw,3.6rem);margin-bottom:.6em;}
+.close p{color:var(--ink-soft);max-width:46ch;margin:0 auto 2em;font-size:1.08rem;}
+
+footer.site{border-top:1px solid rgba(33,30,26,.16);padding-block:30px;display:flex;
+  justify-content:space-between;flex-wrap:wrap;gap:14px;font-size:.78rem;color:var(--ink-soft);}
+footer.site a{color:var(--ink-soft);text-decoration:none;}
+footer.site a:hover,footer.site a:focus-visible{color:var(--cinnabar-deep);}
+
+/* ============================================================ MOTION */
+@media (prefers-reduced-motion: no-preference){
+  .reveal{opacity:0;transform:translateY(18px);animation:rise .8s var(--ease) forwards;}
+  .d1{animation-delay:.05s;} .d2{animation-delay:.16s;} .d3{animation-delay:.27s;}
+  .d4{animation-delay:.38s;} .d5{animation-delay:.5s;}
+  @keyframes rise{to{opacity:1;transform:none;}}
+}
+@media (prefers-reduced-motion: reduce){
+  .tablet .out .line{opacity:1 !important;transform:none !important;}
+}
+
+@media (max-width:860px){
+  .hero,.insight .grid{grid-template-columns:1fr;}
+  .steps{grid-template-columns:1fr;}
+  .step:nth-child(n){margin-top:0;}
+  .tablet .cols{grid-template-columns:1fr;}
+  .tablet .pane.in{border-right:none;border-bottom:1px solid var(--tablet-line);}
+  .tablet .arrow{transform:rotate(90deg);padding:8px 0;}
+  nav.site a:not(:last-child){display:none;}
+}
+</style>
+</head>
+<body>
+
+<div class="wrap">
+
+  <!-- MASTHEAD -->
+  <header class="site">
+    <div class="mark">STELE&nbsp;<small>v0 · ANCHOR</small></div>
+    <nav class="site" aria-label="Primary">
+      <a href="#insight">The idea</a>
+      <a href="#how">How it works</a>
+      <a href="https://github.com/mazze93/stele">Get the compiler</a>
+    </nav>
+  </header>
+
+  <!-- HERO -->
+  <section class="hero">
+    <div>
+      <p class="eyebrow reveal d1">The directive compiler · codename Anchor</p>
+      <h1 class="reveal d2"><span class="thin">Carve the</span><span class="rub">directive</span><span class="thin">once.</span></h1>
+      <p class="sub reveal d3">Author your projects, postures, compliance tiers, and hard
+      stops as one structured source. <b>Anchor compiles it</b> into a portable context
+      block the model reads before it answers — the same intent, every session, every model,
+      with no vendor holding your context.</p>
+      <div class="specrow reveal d3">
+        <span><b>React 19</b></span><span>TypeScript</span><span>Vite</span>
+        <span>Anthropic&nbsp;API</span><span>→ <b>XML · MD · YAML</b></span>
+      </div>
+      <div class="cta-row reveal d4">
+        <a class="btn btn-primary" href="https://github.com/mazze93/stele">Compile a directive</a>
+        <a class="btn btn-ghost" href="#how">See the method</a>
+      </div>
+    </div>
+
+    <!-- compiling basalt tablet -->
+    <div class="tablet reveal d3" id="tablet">
+      <div class="lid">
+        <i class="live" aria-hidden="true"></i><i aria-hidden="true"></i><i aria-hidden="true"></i>
+        <span class="mono">anchor compile ./directive.xml</span>
+        <span class="status" id="status">compiling…</span>
+      </div>
+      <div class="cols">
+        <div class="pane in" aria-label="Directive source input">
+          <div class="label">directive · source</div>
+<span class="line"><span class="dim">&lt;project</span> id=<span class="k">"secure-pride"</span><span class="dim">&gt;</span></span><span class="line">  <span class="dim">&lt;posture&gt;</span><span class="k">MAX</span><span class="dim">&lt;/posture&gt;</span></span><span class="line">  <span class="dim">&lt;compliance&gt;</span>GDPR·SOGI<span class="dim">&lt;/&gt;</span></span><span class="line">  <span class="dim">&lt;crypto&gt;</span>libsodium<span class="dim">&lt;/&gt;</span></span><span class="line">  <span class="dim">&lt;hard-stop&gt;</span>ctx-inference<span class="dim">&lt;/&gt;</span></span><span class="line"><span class="dim">&lt;/project&gt;</span></span>
+        </div>
+        <div class="arrow" aria-hidden="true">▸</div>
+        <div class="pane out" aria-label="Compiled portable context output">
+          <div class="label">compiled · portable context</div>
+<span class="line"><span class="g"># secure-pride</span></span><span class="line">posture: <span class="k">MAX</span> — all audits</span><span class="line">  escalate on unclear boundary</span><span class="line">crypto: <span class="k">libsodium</span> · no localStorage</span><span class="line">data: SOGI · masked identifiers</span><span class="line"><span class="k">HARD STOP</span> context inference</span><span class="line"><span class="g">✓ sealed · model-agnostic</span></span>
+        </div>
+      </div>
+      <div class="seal"><span>inscribed &amp; portable</span><span style="margin-left:auto;">format <b>Claude XML</b></span></div>
+    </div>
+  </section>
+</div>
+
+<!-- INSIGHT -->
+<section class="insight" id="insight">
+  <div class="wrap">
+    <div class="grid">
+      <h2 class="reveal d1">Memory is the model's.<br/><em>The directive is yours.</em></h2>
+      <div class="body reveal d2">
+        <p>A model's memory is passive and model-specific. It drifts, it resets, it belongs
+        to whichever system you happened to be talking to. <strong>A directive is the active
+        opposite</strong> — a model-agnostic instrument you author on purpose and keep.</p>
+        <p>Stele treats it like source. Declare each project's domain, its compliance tier,
+        the postures that govern how hard to audit, and the lines that must never be crossed.
+        Anchor resolves the active project and compiles the rest into context the model reads
+        first — so the same intent holds even when you switch models entirely.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- HOW -->
+<section class="how" id="how">
+  <div class="wrap">
+    <div class="head">
+      <p class="eyebrow">The method</p>
+      <h2>Author · compile · carry</h2>
+    </div>
+    <div class="steps">
+      <div class="step reveal d1"><div class="num">I</div>
+        <h3>Author the directive</h3>
+        <p>Projects, postures, compliance tiers, and hard stops in one structured, versionable source.</p>
+      </div>
+      <div class="step reveal d2"><div class="num">II</div>
+        <h3>Anchor compiles it</h3>
+        <p>The active project is resolved, its posture and unstated constraints prepended, a portable block emitted.</p>
+      </div>
+      <div class="step reveal d3"><div class="num">III</div>
+        <h3>Carry it anywhere</h3>
+        <p>Claude XML, Markdown, or YAML — the same directive steers any model, with no vendor lock on your context.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- CLOSE -->
+<section class="close" id="start">
+  <div class="wrap">
+    <span class="eyebrow reveal d1">Get the compiler</span>
+    <h2 class="reveal d2">Write it once.<br/>Let it govern everything.</h2>
+    <p class="reveal d3">Stele is the standing record of how your work should be done —
+    inscribed by you, compiled for the model, carried wherever you go next.</p>
+    <div class="cta-row reveal d4" style="justify-content:center;">
+      <a class="btn btn-primary" href="https://github.com/mazze93/stele">Compile your directive</a>
+      <a class="btn btn-ghost" href="https://github.com/mazze93/stele">Read the spec</a>
+    </div>
+  </div>
+</section>
+
+<div class="wrap">
+  <footer class="site">
+    <span>STELE · the directive compiler · codename Anchor</span>
+    <span><a href="https://github.com/mazze93/stele">Anchor spec</a> · <a href="https://github.com/mazze93/stele">GitHub</a> · built on React 19 + Vite</span>
+  </footer>
+</div>
+
+<script>
+/* Gentle compile loop on the hero tablet. Content is fully present in the DOM;
+   this only choreographs the reveal. Respects reduced-motion: show compiled
+   state immediately and never animate. */
+(function(){
+  var t=document.getElementById('tablet'), s=document.getElementById('status');
+  if(!t) return;
+  if(window.matchMedia('(prefers-reduced-motion: reduce)').matches){
+    t.classList.add('compiled'); s.textContent='sealed'; s.classList.add('done'); return;
+  }
+  function cycle(){
+    t.classList.remove('compiled'); s.textContent='compiling…'; s.classList.remove('done');
+    setTimeout(function(){ t.classList.add('compiled'); s.textContent='✓ sealed'; s.classList.add('done'); }, 950);
+  }
+  cycle(); setInterval(cycle, 6400);
+})();
+</script>
+
+</body>
+</html>
