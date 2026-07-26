@@ -1,0 +1,38 @@
+# CodeQL analysis — satisfies the branch ruleset's required Code Scanning
+# results (the rule predated any configured scanner, which blocked ALL merges;
+# see stratum data/stele-trace.jsonl st-001).
+#
+# Scope choices (deliberate, GUARDIAN posture):
+#   - javascript-typescript: the app (src/), stele-core, site/ inline JS
+#   - actions: workflow files are attack surface (untrusted-input injection)
+#   - security-extended: broader security queries; this is a security tool,
+#     accept more findings-noise in exchange for recall
+name: codeql
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  schedule:
+    - cron: "17 6 * * 1"
+jobs:
+  analyze:
+    name: Analyze (${{ matrix.language }})
+    runs-on: ubuntu-latest
+    permissions:
+      security-events: write
+      contents: read
+      actions: read
+    strategy:
+      fail-fast: false
+      matrix:
+        language: [javascript-typescript, actions]
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+      - uses: github/codeql-action/init@e4fba868fa4b1b91e1fdab776edc8cfbe6e9fb81 # v4.37.3
+        with:
+          languages: ${{ matrix.language }}
+          queries: security-extended
+      - uses: github/codeql-action/analyze@e4fba868fa4b1b91e1fdab776edc8cfbe6e9fb81 # v4.37.3
+        with:
+          category: "/language:${{ matrix.language }}"
