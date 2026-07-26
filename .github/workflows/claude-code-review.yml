@@ -12,11 +12,16 @@ on:
 
 jobs:
   claude-review:
-    # Optional: Filter by PR author
-    # if: |
-    #   github.event.pull_request.user.login == 'external-contributor' ||
-    #   github.event.pull_request.user.login == 'new-developer' ||
-    #   github.event.pull_request.author_association == 'FIRST_TIME_CONTRIBUTOR'
+    # Skip Dependabot PRs. GitHub resolves `secrets.*` on a Dependabot-authored
+    # PR against the *Dependabot* secret store, not Actions secrets, so
+    # CLAUDE_CODE_OAUTH_TOKEN is empty there and the job fails auth in seconds —
+    # a permanent red check on every dependency bump, which is noise, not signal.
+    # Reviewing mechanical lockfile bumps adds little over `tsc` + Dependabot's
+    # own advisory data. To restore review on bot PRs instead of skipping it,
+    # add CLAUDE_CODE_OAUTH_TOKEN to the repo's Dependabot secrets and drop
+    # this guard — deliberately NOT done, since duplicating a credential into a
+    # second store widens credential surface (GUARDIAN posture).
+    if: github.actor != 'dependabot[bot]'
 
     runs-on: ubuntu-latest
     permissions:
@@ -27,13 +32,13 @@ jobs:
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v7
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
           fetch-depth: 1
 
       - name: Run Claude Code Review
         id: claude-review
-        uses: anthropics/claude-code-action@v1
+        uses: anthropics/claude-code-action@be7b93b1907a4abad570368f3c74b6fe3807510b # v1
         with:
           claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
           plugin_marketplaces: 'https://github.com/anthropics/claude-code.git'
