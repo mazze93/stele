@@ -1,6 +1,7 @@
 # CHECKPOINT
 
-**Last updated:** 2026-08-04 · Phases 0–5 complete and pushed
+**Last updated:** 2026-08-04 · Phases 0–5 complete, cloud review folded in,
+both branches pushed and open as PRs #44 (session) and #43 (lint + stele-core CI)
 
 ## Phases
 
@@ -15,8 +16,9 @@
         `App.tsx` (the counter drift recorded in DECISIONS) — untouched
   - [ ] **carried over:** hard-coded operator machine profile in `compiler.ts`
         (lines 278, 292–297, 319) — needs a decision on runtime-profile shape
-  - [ ] **carried over:** `stele-core` is not covered by CI typecheck; it had
-        two live type errors before this session and no suite of its own
+  - [x] ~~`stele-core` is not covered by CI typecheck~~ — done on
+        `chore/lint-green-and-stele-core-ci` (PR #43); job verified green in
+        GitHub's environment. It still has no suite of its own, only `tsc`.
 - [x] Phase 4 — eval harness: deterministic gate (in `pnpm test`) +
       opt-in live tier; mutation-tested
 - [x] Phase 5 — scoped as ADR-0004 (extraction trust boundary) and
@@ -50,10 +52,12 @@ were verified against source and which are stale — do not re-derive them.
 
 ## Also found, not fixed
 
-- **`pnpm lint` is red on `main`** — 14 errors across `App.tsx`, six
-  `components/ui/*` files, `hooks/*`, `audit.ts:84`, `tripwires.ts:108`. None
-  in files this branch touched. CI runs `tsc` and `vitest` but never `eslint`,
-  which is why nobody noticed.
+- ~~**`pnpm lint` is red on `main`**~~ — fixed on
+  `chore/lint-green-and-stele-core-ci` (PR #43): zero errors, and `pnpm lint`
+  is now a CI step so it cannot rot again unnoticed. `react-hooks/refs` is
+  deliberately `warn`, not `off` — it is the audit-counter drift below, and
+  silencing it would turn a known defect into a green check. Restore to
+  `error` when `App.tsx` stops reading the ref during render.
 - **The blog post** (`stele-blog-post.md`, ProtonDrive) still carries seven
   verified factual errors, including the wrong integrity states. ADR-0005 was
   written against the corrected framing; the post itself is untouched.
