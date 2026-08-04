@@ -105,7 +105,9 @@ export const TOBIRA_REGISTRY: Tobira[] = [
   {
     id: 'TW-009', name: 'APOCRYPHA-APIKEY', glyph: 'Λ',
     description: 'API key or token pattern in pasted content',
-    pattern: /(?:sk-|pk_|rk_|ghp_|gho_|ghu_|ghs_|ghr_|eyJ)[A-Za-z0-9_\-]{20,}|(?:api[_-]?key|api[_-]?secret|access[_-]?token)\s*[:=]\s*[^\s]{16,}/i,
+    // `-` is last in the class, so it is a literal and needs no escape. This is
+    // a lint fix, not a detection change — the matched language is identical.
+    pattern: /(?:sk-|pk_|rk_|ghp_|gho_|ghu_|ghs_|ghr_|eyJ)[A-Za-z0-9_-]{20,}|(?:api[_-]?key|api[_-]?secret|access[_-]?token)\s*[:=]\s*[^\s]{16,}/i,
     confidence: 'high', transition: 'WABI',
     message: 'Credential or API key pattern detected. Content blocked.',
     auditCode: 'APOCRYPHA-001', moduleId: 'apocrypha-scanner',

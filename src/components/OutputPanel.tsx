@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useMemo } from 'react'
 import type { DirectiveState } from '@/lib/types'
 import { compile, wordCount, charCount } from '@/lib/compiler'
 import { PROJECTS, POSTURE_META } from '@/data/projects'
@@ -14,11 +14,14 @@ const TARGET_LEGEND: Record<string, { includes: string[]; excludes: string[] }> 
 }
 
 export function OutputPanel({ state, fullWidth }: Props) {
-  const [output, setOutput] = useState('')
   const [copied, setCopied] = useState(false)
   const [showLegend, setShowLegend] = useState(false)
 
-  useEffect(() => { setOutput(compile(state)) }, [state])
+  // Derived, not stored. This was a useState written from an effect, which
+  // renders once with a stale egregore before the effect catches up — for a
+  // compile output that is the whole panel's content. compile() is pure over
+  // state, so deriving it during render removes the extra pass entirely.
+  const output = useMemo(() => compile(state), [state])
 
   async function copyToClipboard() {
     await navigator.clipboard.writeText(output)
