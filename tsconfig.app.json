@@ -8,7 +8,8 @@
     ],
     "module": "esnext",
     "types": [
-      "vite/client"
+      "vite/client",
+      "node"
     ],
     "skipLibCheck": true,
     "moduleResolution": "bundler",
@@ -30,6 +31,7 @@
     "ignoreDeprecations": "6.0"
   },
   "include": [
-    "src"
+    "src",
+    "evals"
   ]
 }

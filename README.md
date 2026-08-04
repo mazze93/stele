@@ -346,6 +346,28 @@ The intentional fragility doctrine, the EPOCHÉ lockout with no override, the TO
 
 ---
 
+## Known limits
+
+A harness that overstated its own perimeter would be the exact failure it was
+built to detect. Three things are true right now:
+
+- **The Anthropic key lives in the browser.** Extraction and the collaborator
+  call post directly from the page with `anthropic-dangerous-direct-browser-access`.
+  The model credential therefore sits in the least trusted tier of a system
+  whose argument is that the harness is the boundary. `gate()`, the response
+  scan and `LOCKED_FIELDS` enforcement all still run — but anything with
+  access to the page has access to the key. Scoped in
+  [ADR-0004](docs/adr/0004-extraction-trust-boundary.md); not yet fixed.
+- **Detection is lexical.** The TOBIRA registry is regexes and predicates by
+  deliberate choice ([ADR-0002](docs/adr/0002-deterministic-tripwires-over-model-judges.md)).
+  It is a good first filter, not comprehensive prompt-injection defence;
+  encoding, confusables and novel phrasing are a known blind spot. `evals/`
+  measures per-rule recall so the gap is tracked rather than assumed.
+- **The durable audit trail is optional and local.** `stele-core` owns the
+  server-side hash chain and the `/api/sessions/:id/verify` replay, but it is
+  not deployed and the browser does not yet call it. In the shipped
+  single-file bundle the trail is session-scoped and dies with the tab.
+
 ## Getting Started
 
 STELE distributes as a single HTML file. No install. No server. Drop it anywhere.

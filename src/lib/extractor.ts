@@ -55,10 +55,34 @@ async function post(apiKey: string, body: object, signal?: AbortSignal): Promise
   return response.text()
 }
 
-function extractJson(text: string): unknown {
-  const match = text.match(/\{[\s\S]*\}/)
-  if (!match) throw new Error('No JSON object found in response')
-  return JSON.parse(match[0])
+// The model is instructed to return a bare JSON object and nothing else. This
+// parser holds it to that. The previous /\{[\s\S]*\}/ was greedy — it spanned
+// from the first brace to the last, so a response containing prose, two
+// objects, or an object embedded in commentary would still parse, silently
+// producing a patch nobody wrote. Lenient parsing on the most adversarial
+// boundary in the app is how injected content gets a second chance at being
+// read as structure.
+//
+// Fences are tolerated because they are a formatting habit, not content.
+// Anything else is a YUGAMI-shaped result: the response is not the form the
+// contract promised, so it is refused rather than salvaged.
+// Exported for the test suite — this is the boundary that most needs probing.
+export function extractJson(text: string): unknown {
+  const unfenced = text
+    .trim()
+    .replace(/^```(?:json)?\s*/i, '')
+    .replace(/\s*```$/, '')
+    .trim()
+
+  if (!unfenced.startsWith('{') || !unfenced.endsWith('}')) {
+    throw new Error('Model response was not a single JSON object')
+  }
+
+  const parsed: unknown = JSON.parse(unfenced)
+  if (parsed === null || typeof parsed !== 'object' || Array.isArray(parsed)) {
+    throw new Error('Model response was not a single JSON object')
+  }
+  return parsed
 }
 
 function parseEnvelopeText(raw: string): string {
