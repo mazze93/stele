@@ -91,7 +91,9 @@ sessions.get("/:id", async (c) => {
   const session = await prisma.agentSession.findUnique({
     where: { id: c.req.param("id") },
     include: {
-      auditTrail: { orderBy: { timestamp: "asc" } },
+      // Same tiebreaker as the verify replay, so a trail read here and a chain
+      // replayed there always agree on order.
+      auditTrail: { orderBy: [{ timestamp: "asc" }, { id: "asc" }] },
       stateSnapshots: { orderBy: { capturedAt: "desc" } },
     },
   });
@@ -126,7 +128,11 @@ sessions.post(
 
           const prev = await tx.auditEntry.findFirst({
             where: { sessionId },
-            orderBy: { timestamp: "desc" },
+            // `timestamp` alone is not a total order: it is ms-precision and
+            // two sequential appends can land in the same tick, at which point
+            // Postgres may return either first. Picking the wrong predecessor
+            // silently forks the chain. `id` breaks the tie deterministically.
+            orderBy: [{ timestamp: "desc" }, { id: "desc" }],
             select: { integrityHash: true },
           });
 
@@ -188,7 +194,10 @@ sessions.get("/:id/verify", async (c) => {
 
   const entries = await prisma.auditEntry.findMany({
     where: { sessionId },
-    orderBy: { timestamp: "asc" },
+    // Must match the append-side tiebreaker exactly. Replaying in a different
+    // order than the chain was built in reports `valid: false` on an intact
+    // ledger — a false alarm from the one endpoint whose job is to be trusted.
+    orderBy: [{ timestamp: "asc" }, { id: "asc" }],
   });
 
   return c.json({ sessionId, verification: verifyChain(entries, sessionId) });

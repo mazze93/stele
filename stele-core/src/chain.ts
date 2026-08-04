@@ -23,27 +23,53 @@ export type ChainableEvent = {
   secretsDetected?: boolean;
 };
 
-// Field order mirrors src/lib/audit.ts chainInput(). Changing the order or the
-// separator invalidates every stored chain — treat this function as frozen.
+// Bumped whenever the encoding below changes. It is part of the preimage, so a
+// chain written under one version can never silently verify under another —
+// the mismatch surfaces as a broken chain instead of a quiet fork.
+export const CHAIN_VERSION = "v2";
+
+// Length-prefixed, not delimiter-joined. A plain `join("|")` is not injective:
+// every field is caller-controlled and unrestricted (AppendEventSchema takes
+// `z.string()` with no character class), so `tobiraId="KAPU|001", tobiraCode=""`
+// and `tobiraId="KAPU", tobiraCode="001"` produce identical bytes and therefore
+// an identical digest. That lets someone with database write access shift
+// content across a field boundary while the stored hash — and every successor —
+// still verifies, which is precisely the tampering /verify exists to catch.
+// `${s.length}:${s}` is unambiguous because the reader consumes exactly n units.
+function field(s: string): string {
+  return `${s.length}:${s}`;
+}
+
+// Arrays are encoded element-wise for the same reason: joining on "," lets a
+// comma inside an element impersonate an element boundary.
+function list(xs: string[] | undefined): string {
+  const inner = (xs ?? []).map(field).join("");
+  return field(inner);
+}
+
+// Field order mirrors src/lib/audit.ts chainInput(). Changing the order, the
+// encoding, or CHAIN_VERSION invalidates every stored chain — the two encoders
+// must be changed together, in the same commit.
 export function chainInput(
   prevHash: string,
   e: ChainableEvent,
   sessionId: string,
   ts: string
 ): string {
-  return [
-    prevHash,
-    e.action,
-    e.tobiraId ?? "",
-    e.tobiraCode ?? "",
-    e.fromState ?? "",
-    e.toState ?? "",
-    String(e.secretsDetected ?? false),
-    e.fieldsExtracted?.join(",") ?? "",
-    e.fieldsRejected?.join(",") ?? "",
-    sessionId,
-    ts,
-  ].join("|");
+  return (
+    CHAIN_VERSION +
+    field(prevHash) +
+    field(e.action) +
+    field(e.tobiraId ?? "") +
+    field(e.tobiraCode ?? "") +
+    field(e.fromState ?? "") +
+    field(e.toState ?? "") +
+    field(String(e.secretsDetected ?? false)) +
+    list(e.fieldsExtracted) +
+    list(e.fieldsRejected) +
+    field(sessionId) +
+    field(ts)
+  );
 }
 
 export function chainHash(
