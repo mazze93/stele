@@ -50,7 +50,7 @@ export default function App() {
     appendEntry(auditTrailRef.current, 'session-start').then(trail => {
       auditTrailRef.current = trail
     })
-  }, [])  // eslint-disable-line react-hooks/exhaustive-deps
+  }, [])
 
   function applyPreset(mode: string) { setState(prev => applySessionPreset(prev, mode)) }
 

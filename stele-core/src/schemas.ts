@@ -45,6 +45,12 @@ export const CreateSessionSchema = z.object({
 
 // POST /api/sessions/:id/events — append an audit entry
 // secretsDetected is boolean ONLY — the server must never receive or store the actual secret
+//
+// integrityHash is deliberately ABSENT. The server computes the chain hash
+// itself from the previous entry (see src/chain.ts); a client-supplied hash
+// would only let the log writer vouch for its own tamper evidence. Zod strips
+// unknown keys, so an old client still sending one is ignored rather than
+// rejected — the value simply never reaches the database.
 export const AppendEventSchema = z.object({
   action: AuditActionTypeSchema,
   tobiraId: z.string().optional(),
@@ -54,7 +60,6 @@ export const AppendEventSchema = z.object({
   fieldsExtracted: z.array(z.string()).default([]),
   fieldsRejected: z.array(z.string()).default([]),
   secretsDetected: z.boolean().default(false),
-  integrityHash: z.string().min(1),
 });
 
 // PATCH /api/sessions/:id/end — mark session ended and capture state snapshot

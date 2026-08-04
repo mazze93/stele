@@ -14,4 +14,33 @@ jobs:
           cache: pnpm
       - run: pnpm install --frozen-lockfile
       - run: npx tsc --noEmit
+      - run: pnpm lint
       - run: pnpm test
+
+  # stele-core is a separate package with its own lockfile (npm, not pnpm) and
+  # was not covered by CI at all — it reached main with live type errors once
+  # already, and it now holds the /api/* auth perimeter and the audit chain,
+  # which is the last code in this repo that should go unchecked.
+  stele-core:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: stele-core
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: stele-core/package-lock.json
+      - run: npm ci
+      # The Prisma client is generated, gitignored, and required for tsc to
+      # resolve the model types — without this step the typecheck fails on a
+      # fresh checkout for a reason that has nothing to do with the code.
+      # `prisma generate` never connects to the database, but prisma.config.ts
+      # resolves env("DATABASE_URL") eagerly and throws if it is missing, so a
+      # syntactically valid placeholder is required. It is never dialled.
+      - run: npx prisma generate
+        env:
+          DATABASE_URL: postgresql://ci:ci@localhost:5432/ci
+      - run: npx tsc --noEmit
