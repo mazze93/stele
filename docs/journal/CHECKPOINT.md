@@ -1,6 +1,6 @@
 # CHECKPOINT
 
-**Last updated:** 2026-08-04 · Phase 0 complete, awaiting go-ahead on Phases 2–5
+**Last updated:** 2026-08-04 · Phases 0–5 complete and pushed
 
 ## Phases
 
@@ -17,8 +17,11 @@
         (lines 278, 292–297, 319) — needs a decision on runtime-profile shape
   - [ ] **carried over:** `stele-core` is not covered by CI typecheck; it had
         two live type errors before this session and no suite of its own
-- [ ] Phase 4 — eval harness + adversarial corpus
-- [ ] Phase 5 — adaptive-response routing; CLI plugin hint
+- [x] Phase 4 — eval harness: deterministic gate (in `pnpm test`) +
+      opt-in live tier; mutation-tested
+- [x] Phase 5 — scoped as ADR-0004 (extraction trust boundary) and
+      ADR-0005 (ecosystem position, envelope-before-CLI); README gains a
+      Known limits section rather than implying a closed perimeter
 
 ## To resume
 
@@ -37,13 +40,25 @@ were verified against source and which are stale — do not re-derive them.
 - **Deploy shape** — root `wrangler.toml` declares
   `pages_build_output_dir = "dist"`; `site/README.md` documents direct upload of
   `site/deploy`. One is stale.
-- **CLI plugin hint** — the requested `cli/index.ts` `claude-code-hint` snippet
-  presumes a CLI entrypoint and a published `stele@claude-plugins-official`
-  plugin. Neither exists in this repo. Needs scope before it is built.
+- ~~CLI plugin hint~~ — resolved as ADR-0005: the ecosystem surface is an
+  *envelope*, not a command, and a CLI is inherited from the stratum /
+  adaptive-response integration rather than authored standalone. The
+  `claude-code-hint` line is sequenced last, after a plugin exists to announce.
 - **Blog post corrections** — `stele-blog-post.md` in ProtonDrive has seven
   verified factual errors (wrong integrity states, wrong audit-hash claim, wrong
   type shapes). Not yet applied; awaiting choice of edit-in-place vs diff.
 
+## Also found, not fixed
+
+- **`pnpm lint` is red on `main`** — 14 errors across `App.tsx`, six
+  `components/ui/*` files, `hooks/*`, `audit.ts:84`, `tripwires.ts:108`. None
+  in files this branch touched. CI runs `tsc` and `vitest` but never `eslint`,
+  which is why nobody noticed.
+- **The blog post** (`stele-blog-post.md`, ProtonDrive) still carries seven
+  verified factual errors, including the wrong integrity states. ADR-0005 was
+  written against the corrected framing; the post itself is untouched.
+
 ## Push queue
 
-Nothing pushed yet. Branch cut from `3c22293`.
+Branch `session/2026-08-04-perimeter-and-reconciliation`, cut from `3c22293`,
+pushed through Phase 5. No PR opened — that is the user's call.
