@@ -5,7 +5,7 @@
 ## Phases
 
 - [x] Phase 0 — journal scaffold, assumption check, review re-verification
-- [ ] Phase 1 — CLAUDE.md reconciliation (items 1, 3–6, 8–9) — **authorized**
+- [x] Phase 1 — CLAUDE.md reconciliation (items 1, 3–6, 8–9)
 - [ ] Phase 2 — stele-core `/api/*` bearer auth + loopback bind
 - [ ] Phase 3 — review triage (server-side hash, audit serialization, strict
       JSON parse, untrack `.claude/settings.local.json`, machine profile)
