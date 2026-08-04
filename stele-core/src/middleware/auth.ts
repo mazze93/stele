@@ -8,20 +8,20 @@
 // itself and does not call next(), so preflights never reach this middleware —
 // which is correct, because browsers do not send Authorization on a preflight.
 
-import { timingSafeEqual } from "node:crypto";
+import { createHash, timingSafeEqual } from "node:crypto";
 import type { MiddlewareHandler } from "hono";
 
 // Constant-time compare. A plain `!==` on the token leaks its length and its
 // matching prefix through response timing.
-function secretsMatch(presented: string, expected: string): boolean {
-  const a = Buffer.from(presented, "utf8");
-  const b = Buffer.from(expected, "utf8");
-  if (a.length !== b.length) {
-    // Still burn a comparison so the mismatch-length path is not measurably
-    // faster than the mismatch-content path.
-    timingSafeEqual(b, b);
-    return false;
-  }
+//
+// Both sides are hashed to a fixed 32 bytes before comparison. That removes the
+// length branch entirely — comparing raw buffers means an early
+// `a.length !== b.length` return whose cost still tracks the presented token's
+// length. Digesting first makes every comparison identical work regardless of
+// what was presented.
+export function secretsMatch(presented: string, expected: string): boolean {
+  const a = createHash("sha256").update(presented, "utf8").digest();
+  const b = createHash("sha256").update(expected, "utf8").digest();
   return timingSafeEqual(a, b);
 }
 

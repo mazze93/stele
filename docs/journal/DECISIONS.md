@@ -231,3 +231,40 @@ are unreachable after the next checkout — precisely the loss mode this skill
 exists to prevent.
 
 **Reverse:** the branch is disposable; `git branch -D` it and re-cut from `main`.
+
+---
+
+## 2026-08-04 · Phase 3 correction — the retry contract never fired
+
+**Found by adversarial review of the Phase 3 diff, verified against the
+installed client.** `isSerializationFailure()` stringified the error and looked
+for `"40001"` or `"could not serialize"`. Prisma does not pass the SQLSTATE
+through: `TransactionWriteConflict` is normalized to code `P2034` with the fixed
+message *"Transaction failed due to a write conflict or a deadlock. Please retry
+your transaction"*. Confirmed by reading
+`stele-core/node_modules/@prisma/client/runtime/client.js` — the mapping switch
+returns `"P2034"`, and `grep -c "40001"` over the whole runtime is **0**.
+
+**Consequence of the bug:** a genuine concurrent append would have fallen
+through to `throw err` and surfaced as an opaque `500` from Hono's `onError`,
+not the documented `409 Concurrent append — retry`. The ledger would not have
+forked — Postgres still aborts the loser — but the retry contract the comment
+advertises did not exist. Typecheck could never catch this; it is a claim about
+runtime string contents in a dependency.
+
+**Fix:** match `err.code === "P2034"` as the primary signal, keeping raw
+SQLSTATE `40001` (on `code` and on `cause.code`) as a secondary probe for the
+driver-adapter path before normalization. Probed 9/9, including an explicit
+regression case asserting the *old* implementation missed `P2034` while the new
+one catches it, and that `P2002`/`P2025` are not swallowed as retryable.
+
+**Also tightened in the same pass:** `secretsMatch()` now SHA-256s both sides
+before `timingSafeEqual`, removing the length branch entirely. The previous
+version returned early on length mismatch, so total work still weakly tracked
+the presented token's length. Low severity against a 64-char random secret, but
+digesting first is simpler *and* strictly better. Probed 8/8; the live
+perimeter re-probed unchanged (401 unauthenticated, loopback-only, `/verify`
+also behind the gate).
+
+**Reverse:** both functions are self-contained and exported; revert either
+without touching call sites.

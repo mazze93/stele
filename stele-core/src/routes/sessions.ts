@@ -19,13 +19,29 @@ class AppendRejected extends Error {
 }
 
 // Postgres raises SQLSTATE 40001 when a Serializable transaction cannot be
-// ordered. Prisma surfaces it on the error's `code`/`meta`, shape depending on
-// adapter, so match the SQLSTATE defensively rather than the wrapper.
-function isSerializationFailure(err: unknown): boolean {
-  const s = JSON.stringify(
-    err instanceof Error ? { m: err.message, ...(err as object) } : err
-  );
-  return s.includes("40001") || s.includes("could not serialize");
+// ordered. Prisma does NOT pass that string through: it normalizes
+// TransactionWriteConflict to code "P2034" with the fixed message "Transaction
+// failed due to a write conflict or a deadlock. Please retry your transaction".
+// Verified against the installed runtime — "40001" appears nowhere in
+// @prisma/client, so a substring match on the SQLSTATE never fires and a real
+// conflict would surface as an opaque 500 instead of the documented 409 retry.
+//
+// P2034 is the check that matters. The raw SQLSTATE is kept as a secondary
+// probe only because a driver-adapter error can reach us before Prisma
+// normalizes it; it is a fallback, never the primary signal.
+export function isSerializationFailure(err: unknown): boolean {
+  if (typeof err !== "object" || err === null) return false;
+
+  const code = (err as { code?: unknown }).code;
+  if (code === "P2034") return true;
+
+  // Driver-adapter path: node-postgres surfaces SQLSTATE on `code`, and Prisma
+  // may carry the original under `cause`.
+  if (code === "40001") return true;
+  const cause = (err as { cause?: { code?: unknown } }).cause;
+  if (cause && typeof cause === "object" && cause.code === "40001") return true;
+
+  return false;
 }
 
 // POST /api/sessions — Stele calls this at session start
