@@ -79,6 +79,77 @@ scaffold exists to guard against. `docs/` already exists in this repo alongside
 
 ---
 
+## 2026-08-04 · Phase 2 — perimeter closed, and probed rather than assumed
+
+**Decision:** bearer-token middleware on `/api/*` + loopback bind, in
+`stele-core/src/middleware/auth.ts` rather than inline in `server.ts`.
+
+**Why a separate module:** the perimeter is the one thing in stele-core that
+must be independently testable when a suite finally exists. Inline middleware in
+`createApp()` can only be exercised through a booted server.
+
+**Three deviations from the minimum fix as specified, each deliberate:**
+
+1. **Constant-time comparison.** `auth !== \`Bearer ${expected}\`` leaks the
+   token's length and matching prefix through response timing. Uses
+   `node:crypto.timingSafeEqual`, with a burn-comparison on the length-mismatch
+   path so it is not measurably faster than the content-mismatch path.
+2. **`Authorization` added to the CORS `allowHeaders` allowlist.** Without it the
+   browser blocks every authenticated request at the preflight. The middleware
+   is registered *after* `cors()` — `hono/cors` answers OPTIONS itself and does
+   not call `next()`, and browsers never send `Authorization` on a preflight.
+   Reversing that order breaks all browser clients. Load-bearing.
+3. **`HOST` env var, defaulting to `127.0.0.1`** rather than hard-coding the
+   hostname, so exposure stays possible but has to be an explicit act.
+
+**Probed, not assumed** (`npx tsx index.ts`, placeholder `DATABASE_URL`):
+
+| probe | result |
+|---|---|
+| `GET /health`, no token | `200` — deliberately outside the perimeter |
+| `GET /api/drift`, no token | `401 unauthorized` |
+| wrong token | `401` |
+| right token + extra suffix (length mismatch) | `401` |
+| token without `Bearer ` scheme | `401` |
+| correct token | passes auth, `500` from the unreachable placeholder DB — i.e. it reached the route |
+| `OPTIONS` preflight, no token | `204`, `access-control-allow-headers: Content-Type,Authorization` |
+| listening socket | `127.0.0.1:4321` only |
+| **no secret configured** — `GET`, `POST`, and bearer-carrying requests | all `500 server_not_configured`, one refusal warning logged each; `/health` still `200` |
+
+The last row is the one that matters: it fails closed. There is no anonymous
+fallback when the operator forgets to configure the token.
+
+**Also found while doing this:** `stele-core/.gitignore` had `.env.*` with no
+`!.env.example` negation (the root `.gitignore` has one), so the new
+`.env.example` would have been silently ignored. Fixed in the same commit.
+
+**And:** `stele-core` has never been typechecked by CI — `typecheck.yml` only
+covers the root package. `npx tsc --noEmit` in `stele-core` reported two errors
+before this work, both from the un-generated Prisma client; both cleared after
+`prisma generate`. Worth a CI job, filed as a Phase 3 candidate.
+
+**Reverse:** drop the `app.use("/api/*", requireBearer)` line and delete
+`middleware/auth.ts`; restore `serve({ fetch, port })` without `hostname`.
+
+---
+
+## 2026-08-04 · Dependencies installed in this worktree
+
+**Why:** editing a security-relevant file with no typecheck available is how
+subtle breakage ships. Front-end via `pnpm install --frozen-lockfile` (pnpm is
+not on PATH on this machine — `npx pnpm@10` bootstraps it); `stele-core` via
+`npm install`.
+
+**Note on install scripts:** npm 11 declined to run four postinstall scripts
+(`@prisma/engines`, `esbuild`, `fsevents`, `prisma`) and printed an
+`allow-scripts` warning. That default matches what the Repository Review asked
+for, so it was left alone; `prisma generate` was run explicitly instead, with a
+placeholder `DATABASE_URL` that is never connected to.
+
+**Reverse:** `rm -rf node_modules stele-core/node_modules stele-core/generated`.
+
+---
+
 ## 2026-08-04 · Work happens on a branch, not detached HEAD
 
 **Why:** the worktree opened at detached `3c22293`. Commits on a detached HEAD
