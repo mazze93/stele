@@ -8,7 +8,9 @@
     "build": "tsc -b && vite build && mv dist/index.html dist/bundle.html",
     "lint": "eslint .",
     "preview": "vite preview",
-    "test": "vitest run"
+    "test": "vitest run src evals/eval.test.ts",
+    "eval": "vitest run evals/eval.test.ts",
+    "eval:live": "vitest run evals/live"
   },
   "dependencies": {
     "@dnd-kit/core": "^6.3.1",

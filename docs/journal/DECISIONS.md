@@ -268,3 +268,56 @@ also behind the gate).
 
 **Reverse:** both functions are self-contained and exported; revert either
 without touching call sites.
+
+---
+
+## 2026-08-04 · Phase 4 — eval harness: model in the call path, never in the grader
+
+**The ADR-0002 tension, resolved as specified:** a model may sit in the *call
+path* (Group 4's entire risk surface is that live request, and no fixture
+substitutes for it); a model may never sit in the *grader* — a judge is
+promptable by the content under test, and a score is not a replayable audit
+code. Every verdict in both tiers is a string comparison against a TOBIRA id, a
+boolean from the real detector, or a key-set check.
+
+**Deterministic tier** (`pnpm eval`, no network, wired into `pnpm test` so CI
+runs it): 16 assertions over a 17-case adversarial corpus and 6 benign cases.
+Per-TOBIRA recall against the *labeled* id — "something fired" is not a pass.
+Zero-tolerance benign false positives, no threshold. Coverage-as-a-gate: every
+`TOBIRA_REGISTRY` entry needs ≥1 case, asserted rather than reviewed. Registry
+floor. Per-rule regression against a committed `evals/baseline.json` — per rule,
+because an aggregate lets one module rot behind a growing corpus.
+
+**Mutation-tested, because 13/13 recall on the first run proves the corpus
+matches the detectors, not that the gate would catch a break:**
+
+| mutation | result |
+|---|---|
+| neuter TW-001's pattern to `/$^NEVERMATCHES/` | 2 failures — recall test names both TW-001 cases by id, baseline-regression test also red |
+| delete a TOBIRA object from the registry | 2 failures — recall test plus the registry-floor assertion |
+| restore | 16/16 green |
+
+**Live tier** (`pnpm eval:live`, opt-in, needs `ANTHROPIC_API_KEY`, skips
+cleanly without one, never in CI). Measures the one thing fixtures cannot:
+whether content that *survives the paste gate* can still steer the model into
+emitting locked fields. All four cases are engineered gate-clean and assert it
+— if one starts firing a paste TOBIRA, that is the gate improving and the case
+needs replacing, not the tier failing. Grading stays code: locked fields absent
+from the applied patch, and `validatePatch()` rejecting *whole* rather than
+strip-and-apply when the model does emit one.
+
+**Deliberately excluded:** narrative-quality evaluation for `CollaboratorPanel`.
+Subjective rather than adversarial; it needs separate result plumbing. The
+moment a fuzzy judge shares a report with an auditable security gate, the number
+means neither thing.
+
+**Incidental:** `tsconfig.app.json` now includes `evals` and adds `node` types,
+so the harness is typechecked rather than only executed.
+
+**Found, not fixed:** `pnpm lint` is already red on `main` — 14 errors across
+`App.tsx`, six `components/ui/*` files, `hooks/*`, `audit.ts:84` and
+`tripwires.ts:108`. None are in files this branch touched. CI runs `tsc` and
+`vitest` but never `eslint`, which is why it went unnoticed.
+
+**Reverse:** `rm -rf evals`, restore `"test": "vitest run"`, revert the
+tsconfig include.

@@ -126,7 +126,12 @@ model Tessera {
   module      String           // which module/function exists
   missingHalf String           // what wiring is dormant
   blockedBy   String?          // sequencing dependency
-  buildGroup  Int              // 1–5 build group that completes it
+  buildGroup  Int              // 1–5 build group that completes it.
+                               // CATEGORICAL, not a quantity — it names a
+                               // BUILD SEQUENCING group, and group 4 is not
+                               // "twice" group 2. Never _sum or _avg this
+                               // field; aggregate with groupBy + _count, the
+                               // way drift.ts treats tobiraCode.
 
   resolvedAt  DateTime?
   createdAt   DateTime  @default(now())

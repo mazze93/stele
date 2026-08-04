@@ -1,0 +1,56 @@
+{
+  "perRule": [
+    {
+      "tobiraId": "TW-001",
+      "recall": 1
+    },
+    {
+      "tobiraId": "TW-002",
+      "recall": 1
+    },
+    {
+      "tobiraId": "TW-003",
+      "recall": 1
+    },
+    {
+      "tobiraId": "TW-004",
+      "recall": 1
+    },
+    {
+      "tobiraId": "TW-005",
+      "recall": 1
+    },
+    {
+      "tobiraId": "TW-006",
+      "recall": 1
+    },
+    {
+      "tobiraId": "TW-007",
+      "recall": 1
+    },
+    {
+      "tobiraId": "TW-008",
+      "recall": 1
+    },
+    {
+      "tobiraId": "TW-009",
+      "recall": 1
+    },
+    {
+      "tobiraId": "TW-010",
+      "recall": 1
+    },
+    {
+      "tobiraId": "TW-011",
+      "recall": 1
+    },
+    {
+      "tobiraId": "TW-012",
+      "recall": 1
+    },
+    {
+      "tobiraId": "TW-013",
+      "recall": 1
+    }
+  ]
+}

@@ -43,3 +43,6 @@ site/deploy/
 
 # Claude Code operator-local permissions — never shared
 .claude/settings.local.json
+
+# eval report is regenerated every run; the baseline is committed
+evals/report.json
