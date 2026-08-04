@@ -173,7 +173,10 @@ model AuditEntry {
   fieldsExtracted String[]
   fieldsRejected  String[]
   secretsDetected Boolean   @default(false) // boolean ONLY — never log what was found
-  integrityHash   String    // djb2 32-bit; session-local, display-only
+  integrityHash   String    // SHA-256 chain hash over prevHash + this event.
+                            // Computed server-side in src/chain.ts and never
+                            // accepted from the client. Verify a session's
+                            // chain via GET /api/sessions/:id/verify.
 
   timestamp DateTime @default(now())
 

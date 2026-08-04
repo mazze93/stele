@@ -8,8 +8,15 @@
 - [x] Phase 1 — CLAUDE.md reconciliation (items 1, 3–6, 8–9)
 - [x] Phase 2 — stele-core `/api/*` bearer auth + loopback bind (probed: 401
       unauthenticated, 500 fail-closed unconfigured, loopback-only socket)
-- [ ] Phase 3 — review triage (server-side hash, audit serialization, strict
-      JSON parse, untrack `.claude/settings.local.json`, machine profile)
+- [x] Phase 3 — review triage: server-side chain + `/verify` route, strict
+      `extractJson` + 14 new tests, `.claude/settings.local.json` untracked,
+      session-start hook narrowed to `--frozen-lockfile --ignore-scripts`
+  - [ ] **carried over:** audit-write serialization + honest `auditCount` in
+        `App.tsx` (the counter drift recorded in DECISIONS) — untouched
+  - [ ] **carried over:** hard-coded operator machine profile in `compiler.ts`
+        (lines 278, 292–297, 319) — needs a decision on runtime-profile shape
+  - [ ] **carried over:** `stele-core` is not covered by CI typecheck; it had
+        two live type errors before this session and no suite of its own
 - [ ] Phase 4 — eval harness + adversarial corpus
 - [ ] Phase 5 — adaptive-response routing; CLI plugin hint
 

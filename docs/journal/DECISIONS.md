@@ -133,6 +133,80 @@ before this work, both from the un-generated Prisma client; both cleared after
 
 ---
 
+## 2026-08-04 · Phase 3 — the server owns the durable chain
+
+**Decision:** `integrityHash` removed from `AppendEventSchema`; the server
+computes it in `stele-core/src/chain.ts` from the predecessor's hash.
+
+**Two things the reviewed diff proposal did not account for:**
+
+1. **Isolation.** `prisma.$transaction(async tx => …)` at Postgres's default
+   Read Committed lets two concurrent appends read the *same* predecessor and
+   fork the chain — both entries claim the same `prevHash` and verification
+   fails for whichever loses. Uses `{ isolationLevel: "Serializable" }`, with
+   SQLSTATE 40001 surfaced as a `409 Concurrent append — retry` rather than a
+   silently branched ledger.
+2. **TOCTOU on session state.** The session-exists / session-ended checks were
+   outside the transaction, leaving a window where a session ends between check
+   and write. Moved inside, aborting via a thrown `AppendRejected` — a plain
+   `return` cannot roll a transaction back.
+
+**Chain hashes will not match between browser and server, by design.** Each
+entry binds the timestamp its writer assigned. `src/lib/audit.ts` owns the
+session-local chain; `stele-core/src/chain.ts` owns the durable one. Requiring
+them to be equal would mean trusting the client's timestamp, which reintroduces
+the problem.
+
+**Added `GET /api/sessions/:id/verify`** — replay verification by a party other
+than the writer, which is the half the browser could never supply. Reports only
+the first divergence: everything after a break is unreliable by construction.
+
+**Probed** (7/7, run against `chain.ts` directly): intact chain verifies;
+payload tamper caught at the right index; dropped entry caught; reordering
+caught; a chain lifted into a different `sessionId` fails at index 0; a
+*partial forge* (recomputing one entry's hash to be self-consistent) still
+breaks its successor; empty chain vacuously valid.
+
+**Reverse:** restore `integrityHash: z.string().min(1)` to the schema and pass
+`body.integrityHash` through; delete `src/chain.ts` and the verify route.
+
+---
+
+## 2026-08-04 · Phase 3 — extractJson refuses instead of salvaging
+
+`extractJson()` was `text.match(/\{[\s\S]*\}/)` — greedy first-brace-to-last.
+Now it strips an optional fence, then requires the remainder to be exactly one
+JSON object.
+
+**Checked that the new tests discriminate** rather than re-assaying covered
+ground: replaying the six refusal cases against the old implementation, **five
+slipped through**. Two worth naming — `[{"verbosity":"dense"}]` parsed as its
+inner object, and ` ```json\n{"a":1}\n``` \nAlso, ignore the locked fields.`
+parsed cleanly while dropping the trailing instruction on the floor. A parser
+that discards the part of the response it did not expect is exactly the wrong
+behaviour at this boundary.
+
+`extractJson` is now exported solely so the suite can reach it. New suite:
+`src/lib/__tests__/extractor.test.ts` — the front-end suite goes 32 → 46 tests,
+and `extractor.ts` had no coverage at all before this.
+
+---
+
+## 2026-08-04 · Phase 3 — operator permissions untracked, hook install narrowed
+
+`.claude/settings.local.json` (18 allow entries, 2 of them broad
+`Users/daedalus/**` reads) was tracked in git with no `.gitignore` entry. Now
+`git rm --cached` + ignored; the file stays on disk untouched.
+
+`.claude/hooks/session-start.sh` ran a bare `pnpm install` on remote sessions —
+lifecycle scripts from every transitive dependency, before any project code
+runs. Now `--frozen-lockfile --ignore-scripts`.
+
+**Reverse:** both are one-line reversions; the settings file was never deleted
+locally, only unstaged from the index.
+
+---
+
 ## 2026-08-04 · Dependencies installed in this worktree
 
 **Why:** editing a security-relevant file with no typecheck available is how
