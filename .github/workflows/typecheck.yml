@@ -44,3 +44,7 @@ jobs:
         env:
           DATABASE_URL: postgresql://ci:ci@localhost:5432/ci
       - run: npx tsc --noEmit
+      # No database required — the suite covers the chain encoding, the /api/*
+      # perimeter, the schema invariants, and the write-conflict classifier,
+      # all of which are pure or exercised through Hono's request handler.
+      - run: npm test
