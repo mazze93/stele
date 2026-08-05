@@ -64,5 +64,11 @@ export function sessionStamp(state: IntegrityState, sessionId: string, ts: numbe
 }
 
 export function generateSessionId(): string {
-  return `${Date.now().toString(36).toUpperCase()}-${Math.random().toString(36).slice(2,6).toUpperCase()}`
+  const bytes = new Uint8Array(4)
+  globalThis.crypto.getRandomValues(bytes)
+  const randomPart = Array.from(bytes)
+    .map(b => b.toString(36).toUpperCase().padStart(2, '0'))
+    .join('')
+    .slice(0, 4)
+  return `${Date.now().toString(36).toUpperCase()}-${randomPart}`
 }
