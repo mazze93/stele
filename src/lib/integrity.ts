@@ -63,12 +63,16 @@ export function sessionStamp(state: IntegrityState, sessionId: string, ts: numbe
   return Math.abs(h).toString(16).toUpperCase().padStart(8, '0')
 }
 
+const BASE36_ALPHABET = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ'
+
 export function generateSessionId(): string {
   const bytes = new Uint8Array(4)
   globalThis.crypto.getRandomValues(bytes)
-  const randomPart = Array.from(bytes)
-    .map(b => b.toString(36).toUpperCase().padStart(2, '0'))
-    .join('')
-    .slice(0, 4)
+  // Map each byte to one base-36 character directly, rather than converting
+  // whole bytes to base-36 text and concatenating: a byte's base-36 form is
+  // 1-2 digits wide and the "tens" digit only ever reaches 0-7 (255 max),
+  // so naive concatenation biases every other character to 8 possible values
+  // instead of 36 and silently drops half the random bytes on top of it.
+  const randomPart = Array.from(bytes, b => BASE36_ALPHABET[b % 36]).join('')
   return `${Date.now().toString(36).toUpperCase()}-${randomPart}`
 }
