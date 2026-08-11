@@ -1,5 +1,7 @@
 name: typecheck
 on: [push, pull_request]
+permissions:
+  contents: read
 jobs:
   tsc:
     runs-on: ubuntu-latest
