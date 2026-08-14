@@ -393,3 +393,45 @@ until the refactor lands, at which point the rule goes back to `error`.
 `DATABASE_URL` — the client is gitignored so `tsc` cannot resolve model types
 without it, and `prisma.config.ts` resolves the variable eagerly. The URL is
 never dialled. Verified green in GitHub's environment, not only locally.
+# DECISIONS — Muse Glimmer evaluation & Stele integration
+
+Append-only. `date · decision · why · how to reverse`.
+
+---
+
+- **2026-08-13 · Journal location · `tools/stele/docs/journal`, separate
+  from the secure-pride consolidation journal.**
+  Why: this workstream outlives any single secure-pride task — it's
+  general local-agent infrastructure that secure-pride's local-swarm work
+  happens to be the trigger for, and Stele already has its own ADR/journal
+  conventions to follow instead of forking a third pattern.
+  Reversible: yes, journal is disposable once ADR-0004 + code land.
+
+- **2026-08-13 · Assumption check · "Muse Glimmer" is a real 2026-08-10
+  Meta release, not a hallucinated/fabricated name.**
+  Verified via WebSearch: 8 independent domains (Meta AI Research,
+  Bloomberg, TechCrunch, Forbes, CNBC, NVIDIA Developer, Hugging Face, qz.com)
+  corroborate the same release with consistent specs (30B, 120K context,
+  distilled from "Muse Spark," Apache 2.0, 4-bit <20GB). Treated as
+  confirmed. Not independently verified: the actual weights' integrity
+  (checksum) or license text in full — that's Phase 1 of PLAN.md, not done
+  here.
+
+- **2026-08-13 · `qwen3.6:latest` (23.9GB) ruled out on this machine.**
+  User stated hardware: 24GB unified RAM, MacBook Pro M5 Pro. A model that
+  size leaves no headroom for the OS or the Claude Code harness itself.
+  Recorded in the secure-pride journal's DECISIONS.md first; duplicated
+  here because it's the direct reason Glimmer's <20GB quantized figure
+  matters rather than being a marketing footnote.
+  Reversible: n/a, a hardware fact.
+
+- **2026-08-13 · Not pulling the model yet.**
+  User said "pull it" but also required provenance scrutiny and fine-tune
+  comparison first ("I want full provenance, scrutinize the options... if
+  we do it we are going to record every step"). Read as: the pull is
+  authorized in principle, but Phase 1 (provenance) and Phase 2 (ADR
+  decision on base vs. fine-tune) come first, per this journal's own
+  phase order — not a reversal of the user's instruction, a sequencing
+  read of it. If this reading is wrong, the fix is just: skip to Phase 3
+  immediately.
+  Reversible: trivially — proceed to the pull whenever confirmed.
