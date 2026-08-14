@@ -452,3 +452,23 @@ Append-only. `date · decision · why · how to reverse`.
   swap.
   Reversible: yes — nothing was changed; old app still in place, download
   sits in scratchpad (session-scoped, will not survive past this session).
+
+- **2026-08-13 · Tool break #2 · manual app-bundle swap blocked by macOS App
+  Management protection, not by user cancel.**
+  User authorized the swap. `osascript 'quit app "Ollama"'` returned "User
+  canceled" (-128) with no one present to cancel it — almost certainly an
+  unanswered Automation permission prompt. `rm -rf /Applications/Ollama.app`
+  then failed with `Permission denied` on every single file, despite the
+  bundle being owned by `mazze` (verified after: `Contents/MacOS/Ollama`,
+  owner `mazze`, unchanged, version still 0.32.6) — this is macOS App
+  Management/Automation TCC protection blocking background processes from
+  modifying `/Applications` apps, not a plain Unix permission issue.
+  Deliberately did not escalate via `sudo` or `chflags` — that would defeat
+  a security control rather than work within it, out of proportion to
+  updating an inference server. **Confirmed no damage**: app bundle intact,
+  every `rm` call failed before deleting anything.
+  Handed back to user: grant Terminal/Claude Code "App Management" in
+  System Settings → Privacy & Security, or update via Ollama's own
+  menu-bar "Check for Updates" (Squirrel-based self-updater, has the right
+  entitlements already).
+  Reversible: n/a, nothing changed.
