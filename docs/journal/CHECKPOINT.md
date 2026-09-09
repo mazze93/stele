@@ -66,3 +66,37 @@ were verified against source and which are stale — do not re-derive them.
 
 Branch `session/2026-08-04-perimeter-and-reconciliation`, cut from `3c22293`,
 pushed through Phase 5. No PR opened — that is the user's call.
+
+---
+
+<!-- Merged 2026-09-07 while rebasing 3 local commits onto 20 upstream ones.
+     The section below was authored on the divergent local branch (2026-08-13,
+     Muse Glimmer session) and is preserved verbatim with its H1 demoted to H2.
+     CHECKPOINT.md is marked -merge in .gitattributes precisely so that this
+     stayed a human decision rather than a silent union. -->
+
+## Checkpoint
+
+Last updated: 2026-08-13 21:50 EDT
+
+## Phases
+- [ ] 1. Provenance research (model card, checksums, license, Ollama
+      registry vs. manual import, fine-tuned variant survey)
+- [ ] 2. Decision — file ADR-0004
+- [ ] 3. Pull + record provenance (first hard-to-reverse step: bandwidth/disk)
+- [ ] 4. Hardware baseline (idle + under-load RAM/CPU on this machine)
+- [ ] 5. Versioned eval harness (prompts + quantifiable tests, checked in)
+- [ ] 6. Stele integration (audit-logging wrapper → stele-core session/event API)
+- [ ] 7. `/security-review` on everything added in 3–6
+- [ ] 8. Resume paused secure-pride consolidation strategy
+
+## To resume
+Read this file, then `PLAN.md`, then `DECISIONS.md`, then continue at the
+first unchecked phase.
+
+## Deferred / needs user
+- Final go on which specific model/variant to pull (Phase 2 output)
+- Confirm `stele-core`'s DATABASE_URL points at a local/dev Postgres before
+  Phase 6 generates real audit traffic against it
+- Whether Glimmer replaces or supplements `gemma4`/`llama3.1:8b` for
+  existing local-swarm use, once Phase 5's numbers exist

@@ -393,3 +393,82 @@ until the refactor lands, at which point the rule goes back to `error`.
 `DATABASE_URL` — the client is gitignored so `tsc` cannot resolve model types
 without it, and `prisma.config.ts` resolves the variable eagerly. The URL is
 never dialled. Verified green in GitHub's environment, not only locally.
+# DECISIONS — Muse Glimmer evaluation & Stele integration
+
+Append-only. `date · decision · why · how to reverse`.
+
+---
+
+- **2026-08-13 · Journal location · `tools/stele/docs/journal`, separate
+  from the secure-pride consolidation journal.**
+  Why: this workstream outlives any single secure-pride task — it's
+  general local-agent infrastructure that secure-pride's local-swarm work
+  happens to be the trigger for, and Stele already has its own ADR/journal
+  conventions to follow instead of forking a third pattern.
+  Reversible: yes, journal is disposable once ADR-0004 + code land.
+
+- **2026-08-13 · Assumption check · "Muse Glimmer" is a real 2026-08-10
+  Meta release, not a hallucinated/fabricated name.**
+  Verified via WebSearch: 8 independent domains (Meta AI Research,
+  Bloomberg, TechCrunch, Forbes, CNBC, NVIDIA Developer, Hugging Face, qz.com)
+  corroborate the same release with consistent specs (30B, 120K context,
+  distilled from "Muse Spark," Apache 2.0, 4-bit <20GB). Treated as
+  confirmed. Not independently verified: the actual weights' integrity
+  (checksum) or license text in full — that's Phase 1 of PLAN.md, not done
+  here.
+
+- **2026-08-13 · `qwen3.6:latest` (23.9GB) ruled out on this machine.**
+  User stated hardware: 24GB unified RAM, MacBook Pro M5 Pro. A model that
+  size leaves no headroom for the OS or the Claude Code harness itself.
+  Recorded in the secure-pride journal's DECISIONS.md first; duplicated
+  here because it's the direct reason Glimmer's <20GB quantized figure
+  matters rather than being a marketing footnote.
+  Reversible: n/a, a hardware fact.
+
+- **2026-08-13 · Not pulling the model yet.**
+  User said "pull it" but also required provenance scrutiny and fine-tune
+  comparison first ("I want full provenance, scrutinize the options... if
+  we do it we are going to record every step"). Read as: the pull is
+  authorized in principle, but Phase 1 (provenance) and Phase 2 (ADR
+  decision on base vs. fine-tune) come first, per this journal's own
+  phase order — not a reversal of the user's instruction, a sequencing
+  read of it. If this reading is wrong, the fix is just: skip to Phase 3
+  immediately.
+  Reversible: trivially — proceed to the pull whenever confirmed.
+
+- **2026-08-13 · Tool break #1 · `ollama pull muse-glimmer:latest` failed:
+  Ollama too old.**
+  User approved the pull. `ollama pull muse-glimmer:latest` (CLI 0.32.6,
+  installed at `/Applications/Ollama.app`, not brew-managed) failed clean:
+  `412: The model you are attempting to pull requires a newer version of
+  Ollama.` `brew info --cask ollama-app` shows 0.32.9 as the latest brew
+  knows of; actual latest may be newer given release timing. Downloaded
+  current build to scratchpad
+  (`Ollama-darwin.zip`, 182MB, verified present). Attempted to swap it into
+  `/Applications/Ollama.app` — **blocked by the Claude Code auto-mode
+  permission classifier** (system-app replace is exactly the kind of action
+  that should ask first; not worked around). Handed to the user: either
+  they update via the app's own auto-updater, or explicitly authorize the
+  swap.
+  Reversible: yes — nothing was changed; old app still in place, download
+  sits in scratchpad (session-scoped, will not survive past this session).
+
+- **2026-08-13 · Tool break #2 · manual app-bundle swap blocked by macOS App
+  Management protection, not by user cancel.**
+  User authorized the swap. `osascript 'quit app "Ollama"'` returned "User
+  canceled" (-128) with no one present to cancel it — almost certainly an
+  unanswered Automation permission prompt. `rm -rf /Applications/Ollama.app`
+  then failed with `Permission denied` on every single file, despite the
+  bundle being owned by `mazze` (verified after: `Contents/MacOS/Ollama`,
+  owner `mazze`, unchanged, version still 0.32.6) — this is macOS App
+  Management/Automation TCC protection blocking background processes from
+  modifying `/Applications` apps, not a plain Unix permission issue.
+  Deliberately did not escalate via `sudo` or `chflags` — that would defeat
+  a security control rather than work within it, out of proportion to
+  updating an inference server. **Confirmed no damage**: app bundle intact,
+  every `rm` call failed before deleting anything.
+  Handed back to user: grant Terminal/Claude Code "App Management" in
+  System Settings → Privacy & Security, or update via Ollama's own
+  menu-bar "Check for Updates" (Squirrel-based self-updater, has the right
+  entitlements already).
+  Reversible: n/a, nothing changed.
