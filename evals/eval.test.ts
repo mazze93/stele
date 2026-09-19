@@ -136,8 +136,18 @@ describe('the fold cannot be routed around', () => {
 
   // Structural: exactly one evaluation site, so the behavioural gate above
   // actually covers every path rather than the one it happens to call.
-  it('evaluates .pattern in exactly one source file', () => {
-    const sites = sourceFiles(SRC).filter(f => /\.pattern\b/.test(readFileSync(f, 'utf8')))
+  it('reaches a TOBIRA pattern in exactly one source file', () => {
+    // Dot access is the obvious form and not the only one. A second evaluator
+    // could reach the same value through a computed key or by destructuring,
+    // and the guard would stay green while an unfolded detection path existed.
+    //
+    // Honest limit: this is textual, so it is defeatable by a sufficiently
+    // indirect access (a dynamic key, Reflect.get, an aliased binding). AST
+    // analysis is the real answer and is not worth a parser dependency here.
+    // What this does buy is that reintroducing the class by ordinary means
+    // fails the build rather than passing review.
+    const REACHES_PATTERN = /\.pattern\b|\[\s*['"`]pattern['"`]\s*\]|\{[^}]*\bpattern\b[^}]*\}\s*=/
+    const sites = sourceFiles(SRC).filter(f => REACHES_PATTERN.test(readFileSync(f, 'utf8')))
     expect(sites.map(f => f.split('/src/')[1])).toEqual(['lib/tripwires.ts'])
   })
 
@@ -162,7 +172,47 @@ describe('the fold cannot be routed around', () => {
   // adapter; escalation logic living there again would be untestable.
   it('escalation happens in lib/enforcement.ts, not in App.tsx', () => {
     const app = readFileSync(join(SRC, 'App.tsx'), 'utf8')
-    expect(app).toMatch(/applyGateResult/)
+    expect(app).toMatch(/decideGateResult/)
+    expect(app).toMatch(/recordGateResult/)
     expect(app).not.toMatch(/\bescalate\s*\(/)
+  })
+
+  // The latch must be committed before the first await, or the pre-EPOCHÉ
+  // surface stays rendered and interactive for as long as the audit hashes
+  // take to write. This was a real regression, caught in review, and it is
+  // exactly the kind that no behavioural assertion in this repo can see.
+  it('handleGateResult latches integrity state before it awaits anything', () => {
+    const app = readFileSync(join(SRC, 'App.tsx'), 'utf8')
+    const body = app.slice(app.indexOf('async function handleGateResult'))
+    // Strip line comments first — the prose in this function talks about
+    // awaiting, and matching that instead of the code made the check pass
+    // for the wrong reason on its first run.
+    const fn = body.slice(0, body.indexOf('\n  }')).replace(/^\s*\/\/.*$/gm, '')
+
+    const firstSetState = fn.indexOf('setState(')
+    const firstAwait = fn.indexOf('await ')
+    expect(firstSetState).toBeGreaterThan(-1)
+    expect(firstAwait).toBeGreaterThan(-1)
+    expect(firstSetState).toBeLessThan(firstAwait)
+  })
+
+  // Every audit write goes through the queue. A writer that reads the trail,
+  // awaits, then writes back will silently drop a concurrent entry — and the
+  // shorter chain still verifies, so verifyChain cannot catch it.
+  // eslint's react-hooks/refs errors on a plain ref read during render, and
+  // that rule is back at 'error'. It does NOT flag reading the trail through
+  // the queue's accessor — verified by probe, not assumed — so the render-time
+  // read could return in that form with lint still clean. This covers it.
+  it('App.tsx reads the audit trail from state, never from the ref', () => {
+    const app = readFileSync(join(SRC, 'App.tsx'), 'utf8')
+    expect(app).not.toMatch(/auditQueueRef\.current\.current\s*\(/)
+  })
+
+  it('App.tsx never appends to the audit trail outside the queue', () => {
+    const app = readFileSync(join(SRC, 'App.tsx'), 'utf8')
+    for (const call of app.match(/appendEntry\([^)]*/g) ?? []) {
+      expect(call).not.toMatch(/appendEntry\(\s*auditTrail/)
+    }
+    expect(app).toMatch(/auditQueueRef\.current\.enqueue/)
   })
 })

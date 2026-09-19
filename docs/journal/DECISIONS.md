@@ -641,3 +641,56 @@ warns about, in the section specifically about not overstating the perimeter.
 **Reversible:** the extraction is mechanical and `App.tsx` retains no
 enforcement logic; reverting means inlining `applyGateResult` again, which
 the Phase 4 gate would then fail by design.
+
+---
+
+## 2026-09-19 · Review of #76 found a lockout-timing regression I introduced
+
+**Greptile P1a, valid, and mine.** The Phase 5 extraction moved `setState`
+from *before* the audit writes to *after* them. The original
+`handleGateResult` latched synchronously and then appended; the refactored
+adapter awaited the whole of `applyGateResult` first. For the duration of N
+SHA-256 appends the pre-EPOCHÉ surface stayed rendered with its actions live.
+
+Fixed by splitting the phases: `decideGateResult()` is **synchronous** and
+`recordGateResult()` is async. The adapter latches before its first `await`.
+Gated by a source-ordering assertion in `evals/` — the first `setState` must
+precede the first `await` — because no behavioural test in this repo can see
+a window that exists only between two renders.
+
+That assertion passed on its first run for the wrong reason: it matched the
+word "await" inside the function's own comment. Comments are now stripped
+before the check.
+
+**Greptile P1b, valid, and the carried-over item from 2026-08-04.** Audit
+writes were read-await-write against a shared ref. Two overlapping writers
+drop one another's entries, and **the surviving chain still verifies** — it
+is internally consistent, merely shorter — so neither `verifyChain()` nor an
+entry count can detect it. Losing the record of a fired TOBIRA is the one
+failure an audit trail may not have.
+
+`createAuditQueue()` serializes every write and reads the trail *inside* its
+turn rather than from a snapshot taken at call time. Mutation-tested: making
+it read at enqueue time reddens four of five queue tests.
+
+**The audit-counter drift is now fully closed**, not half. The trail moved
+from a ref read during render into state published after each completed
+write, so the on-screen count is the real count. `react-hooks/refs` is back
+to `'error'` in `eslint.config.js` per the standing instruction.
+
+**Probed rather than assumed, and it mattered:** the restored rule *does*
+error on a plain ref read during render — confirmed by inserting one. It
+does **not** flag a read through an accessor on the ref's value
+(`auditQueueRef.current.current()`) — also confirmed, after a mutation test
+that I first misread as the rule being dead. So lint would stay clean while
+the drift returned in that form, and `evals/` now gates it separately.
+
+**Greptile P2, valid, non-blocking.** The single-evaluation-site guard only
+recognised dot access. Widened to computed keys and destructuring, with the
+textual limit stated in the test: AST analysis is the real answer and is not
+worth a parser dependency here. Mutation-tested with a `t['pattern']`
+evaluator, which the widened guard names by file.
+
+**`claude-review` failed on infrastructure**, not findings — `is_error:true`
+with "No buffered inline comments" and an internal directory-mismatch
+message. Not a signal about the code; not chased.
