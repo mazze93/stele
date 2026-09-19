@@ -34,7 +34,7 @@ policy.**
 
 ## Decision
 
-Detection matches a **fold** of the input, not the input:
+A TOBIRA fires if it matches the raw input **or** a **fold** of it:
 
 > The fold is the input with all characters in Unicode general category
 > **Cf** (format) removed, then normalized to **NFKC**.
@@ -51,8 +51,27 @@ The **original input, unchanged**, remains what is:
 - transmitted, when transmission is permitted at all
 
 The fold is what the model effectively reads. The original is what gets
-attested. These are deliberately different strings and neither substitutes
-for the other.
+attested. These are deliberately different strings and **neither substitutes
+for the other** — detection takes the union of the two views.
+
+The union is not belt-and-braces. It is required, and review caught the
+version that was not: NFKC is lossy, and for the JSON predicates (TW-002,
+TW-003, TW-012, TW-013) that loss is itself an attack. Two NFKC-equivalent
+member names collapse to one key, `JSON.parse` keeps only the last value, and
+a five-key patch reads as four — slipping past both the unknown-field check
+and the density check. Matching the fold *alone* opened that hole while
+closing the text one.
+
+Neither view dominates the other, measured rather than argued:
+
+| attack | raw | fold |
+|---|---|---|
+| `ig<U+200B>nore previous` | misses | **fires** |
+| NFKC key collapse, 5 keys → 4 | **fires** | misses |
+| fullwidth `ｃｕｓｔｏｍＡｐｐｅｎｄ` key | misses | **fires** |
+
+Taking the union also makes the invariant **structural** rather than merely
+observed: folding can only ever add a firing, never remove one.
 
 ## Rationale
 
@@ -89,6 +108,14 @@ for the other.
   not map to offsets in the original. No current code reports match spans;
   if span reporting is ever added, this mapping is the hard part and should
   be treated as its own decision.
+- **Every pattern is evaluated up to twice.** Skipped when the fold equals
+  the input, which is the common case. Verified that no registry pattern
+  carries `/g`, so re-testing one `RegExp` against a second string cannot
+  trip over `lastIndex` — 9 regex tripwires, 0 global.
+- **Structural predicates must never be given only one view.** A future
+  TOBIRA that parses its input inherits the collapse problem. The union at
+  `runScan()` is what protects it; moving the fold into individual patterns
+  would silently reintroduce this.
 - **Enforced by an invariant, not by review.** The property *no Unicode-only
   mutation may lower assessed risk* is expressed as a generated mutation
   corpus, so regressions surface as failures rather than as absent tests.

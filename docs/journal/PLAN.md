@@ -254,9 +254,14 @@ the fold must not reach either.
 
 - `integrity.ts` keeps zero imports from project code. `fold.ts` must sit
   at the same level — a leaf, imported by the scanner, importing nothing.
-- The fold must be idempotent and must never lengthen the input, or the
-  8000-char `MAX_INPUT_CHARS` guard in `gate()` becomes bypassable in the
-  other direction.
+- The fold must be idempotent. It **can** lengthen the input — NFKC expands
+  U+FB01 `ﬁ` to two characters — so `MAX_INPUT_CHARS` must keep being
+  enforced against the **raw** input in `gate()`, before the scanner runs.
+  That is where it already lives; it must not move downstream of the fold,
+  and no length check may be derived from the folded string.
+  (Corrected 2026-09-19: an earlier draft of this line said the fold must
+  never lengthen input, which is false and would have pushed a future change
+  into either dropping NFKC or length-checking folded text.)
 - Lexicon terms are load-bearing in any string reaching compiled output.
 - Do not nudge a threshold to make a fixture pass. The tessera names this
   as the move the project keeps refusing; it applies here too.
