@@ -13,7 +13,12 @@ jobs:
           node-version: 24
           cache: pnpm
       - run: pnpm install --frozen-lockfile
-      - run: npx tsc --noEmit
+      # `tsc --noEmit` alone is a no-op here: the root tsconfig.json is a
+      # solution file (`"files": []` + `references`), so a non-`-b` invocation
+      # compiles zero files and exits 0 no matter what `src/` contains. It was
+      # green against a deliberate type error. `-b` walks the referenced
+      # projects and checks all 1401 files, cold or warm.
+      - run: npx tsc -b --noEmit
       - run: pnpm lint
       - run: pnpm test
 
