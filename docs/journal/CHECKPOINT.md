@@ -131,9 +131,9 @@ at Phase 0
 - [ ] **Phase 1** — ADR-0006 (the fold policy and its explicit non-coverage)
 - [ ] **Phase 2** — `src/lib/fold.ts`, leaf module, wired into the scanner
 - [ ] **Phase 3** — generated mutation corpus as executable invariant
-- [ ] **Phase 4** — build gate against raw-input matching in detection
-- [ ] **Phase 5** — enforcement-boundary evidence (escalate + appendEntry)
-- [ ] **Phase 6** — publish the remaining perimeter in README
+- [x] **Phase 4** — build gate against raw-input matching in detection
+- [x] **Phase 5** — enforcement-boundary evidence (escalate + appendEntry)
+- [x] **Phase 6** — publish the remaining perimeter in README
 
 ### To resume
 
@@ -196,3 +196,50 @@ The dogfooding question this came from is worth keeping in view: STELE
 compiles governance for seven projects and is the eighth, but nothing in
 the build regenerates or checks its own entry, and `stele-core`'s audit
 ledger has still never taken real traffic.
+
+
+---
+
+<!-- Appended 2026-09-19, second entry of the day. Phases 0-6 of the
+     class-closure thread are complete; this records where it stops. -->
+
+## Checkpoint
+
+**Last updated:** 2026-09-19 · class-closure thread complete, phases 0–6
+
+### Closed
+
+- ADR-0006 filed; detection reads raw OR fold at `runScan()`
+- Generated invariant over every runtime category-Cf code point
+- `evals/eval.test.ts` gates the primitive: one evaluation site, both views,
+  no global patterns, no escalation logic in `App.tsx`
+- `src/lib/enforcement.ts` extracted; enforcement asserted directly
+- README "Known limits" separates demonstrated closure from open classes
+
+95 tests across 9 files. `tsc -b` clean. Build clean.
+
+### Open, pinned, not fixed
+
+Each has a quarantine test that fails if it silently starts passing:
+
+- **Intra-word separators** — `ig nore previous` evades. NFKC maps U+00A0 to
+  a plain space, so NBSP folds *into* this class rather than out of it.
+  Closing it means tolerating a separator inside keywords, which trades
+  against the false-positive discipline ADR-0002 rests on. Needs its own
+  decision and its own corpus.
+- **Visual homoglyphs** — `ign<U+043E>re` with Cyrillic o. Distinct NFKC
+  forms; the fold is a no-op by construction.
+- **Encoded payload differentials** — TW-007 fires low-confidence on a base64
+  block, but nothing decodes it. Signal, not coverage.
+
+### Carried over, still untouched
+
+- `App.tsx` reads `auditTrailRef` during render — why `react-hooks/refs` is
+  `warn` and not `error`. Phase 5 fixed the stale-counter half by calling
+  `setAuditCount()` after enforcement; the render-read half remains.
+- Hard-coded operator machine profile in `compiler.ts:278,292–297,319`.
+- `src/data/projects.ts` self-entry is stale — wrong root, incomplete stack,
+  a resolved openQuestion, and a live T-010 that `CLAUDE.md` retired against
+  a file that never existed in this repo.
+- Deploy shape: root `wrangler.toml` vs `site/README.md`. One is stale.
+- Ollama is gone; Muse Glimmer blocked past phase 2.

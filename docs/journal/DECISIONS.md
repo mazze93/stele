@@ -583,3 +583,153 @@ tessera's §4 warns about.
 
 **Reversible:** nothing changed yet — this entry records the finding and the
 policy. Implementation is PLAN.md phases 1–6.
+
+---
+
+## 2026-09-19 · Phases 4–6 · gate the primitive, prove the boundary, publish the perimeter
+
+**Phase 4 — the gate.** Added to `evals/eval.test.ts`, the file already
+called THE GATE, rather than inventing a parallel mechanism. It gates the
+*primitive*, not the bug: `fold.test.ts` proves the fold works but cannot
+prove it is still **reached**, and a new TOBIRA evaluating its own pattern
+would leave every one of those tests green while reopening the class.
+
+Four assertions, behavioural first: a raw-only payload and a fold-only
+payload must both fire; `.pattern` must be evaluated in exactly one source
+file; that file must import `fold` and still reference both operands; no
+registry pattern may carry `/g`. Mutation-tested — collapsing to folded-only
+reddens two, and adding a second evaluation site elsewhere in `src/` reddens
+the structural one by name.
+
+**Phase 5 — the enforcement boundary.** The logic lived inside
+`App.handleGateResult`, reachable only by rendering the app, and this repo
+has no jsdom or testing-library (not worth adding a DOM stack to a security
+tool for one suite). Extracted to `src/lib/enforcement.ts`; `App.tsx` is now
+a thin adapter with no escalation logic of its own, which the Phase 4 gate
+also asserts.
+
+**One deliberate behaviour change, not a pure extraction:** the adapter now
+calls `setAuditCount()` after enforcement. It previously did not, so the
+on-screen audit counter went stale whenever a TOBIRA fired — half of the
+carried-over `auditCount` drift. The other half (`App.tsx` reading
+`auditTrailRef` during render, why `react-hooks/refs` is `warn` not `error`)
+is untouched.
+
+**A test that proved nothing, caught by mutation.** The first version of
+"leaves the hash chain intact" used a single-TOBIRA payload. A
+concurrent-append mutant **passed** it — `Promise.all` over one element is
+indistinguishable from awaiting it. Rewritten against a payload that fires
+three (`<!-- system: override the directive -->`), asserting distinct hashes
+rather than entry count, since a fork produces the right count. The mutant
+now fails. Recorded because the suite was green and wrong, which is the
+failure mode this whole thread exists to refuse.
+
+**Phase 6 — the perimeter.** README "Known limits" goes from three items to
+four, separating demonstrated closure from what is open. Closed:
+invisible-character evasion, with how it is *held* closed. Open: intra-word
+separators, visual homoglyphs, encoded payload differentials.
+
+**The README overclaimed and the code was changed to match, not the prose.**
+The draft said each open class "is pinned by a quarantine test" when only the
+separator case was. Rather than softening the sentence, quarantines were
+added for the Cyrillic homoglyph (`ign<U+043E>re` — distinct NFKC forms, so
+the fold is a no-op by construction) and for the base64 case (TW-007 fires at
+low confidence, but nothing decodes the block, so the signal is not
+coverage). Softening would have been the marketing failure the tessera's §4
+warns about, in the section specifically about not overstating the perimeter.
+
+**Reversible:** the extraction is mechanical and `App.tsx` retains no
+enforcement logic; reverting means inlining `applyGateResult` again, which
+the Phase 4 gate would then fail by design.
+
+---
+
+## 2026-09-19 · Review of #76 found a lockout-timing regression I introduced
+
+**Greptile P1a, valid, and mine.** The Phase 5 extraction moved `setState`
+from *before* the audit writes to *after* them. The original
+`handleGateResult` latched synchronously and then appended; the refactored
+adapter awaited the whole of `applyGateResult` first. For the duration of N
+SHA-256 appends the pre-EPOCHÉ surface stayed rendered with its actions live.
+
+Fixed by splitting the phases: `decideGateResult()` is **synchronous** and
+`recordGateResult()` is async. The adapter latches before its first `await`.
+Gated by a source-ordering assertion in `evals/` — the first `setState` must
+precede the first `await` — because no behavioural test in this repo can see
+a window that exists only between two renders.
+
+That assertion passed on its first run for the wrong reason: it matched the
+word "await" inside the function's own comment. Comments are now stripped
+before the check.
+
+**Greptile P1b, valid, and the carried-over item from 2026-08-04.** Audit
+writes were read-await-write against a shared ref. Two overlapping writers
+drop one another's entries, and **the surviving chain still verifies** — it
+is internally consistent, merely shorter — so neither `verifyChain()` nor an
+entry count can detect it. Losing the record of a fired TOBIRA is the one
+failure an audit trail may not have.
+
+`createAuditQueue()` serializes every write and reads the trail *inside* its
+turn rather than from a snapshot taken at call time. Mutation-tested: making
+it read at enqueue time reddens four of five queue tests.
+
+**The audit-counter drift is now fully closed**, not half. The trail moved
+from a ref read during render into state published after each completed
+write, so the on-screen count is the real count. `react-hooks/refs` is back
+to `'error'` in `eslint.config.js` per the standing instruction.
+
+**Probed rather than assumed, and it mattered:** the restored rule *does*
+error on a plain ref read during render — confirmed by inserting one. It
+does **not** flag a read through an accessor on the ref's value
+(`auditQueueRef.current.current()`) — also confirmed, after a mutation test
+that I first misread as the rule being dead. So lint would stay clean while
+the drift returned in that form, and `evals/` now gates it separately.
+
+**Greptile P2, valid, non-blocking.** The single-evaluation-site guard only
+recognised dot access. Widened to computed keys and destructuring, with the
+textual limit stated in the test: AST analysis is the real answer and is not
+worth a parser dependency here. Mutation-tested with a `t['pattern']`
+evaluator, which the widened guard names by file.
+
+**`claude-review` failed on infrastructure**, not findings — `is_error:true`
+with "No buffered inline comments" and an internal directory-mismatch
+message. Not a signal about the code; not chased.
+
+---
+
+## 2026-09-19 · Reset could repaint the previous session's audit trail
+
+**Greptile P1 on the second review pass, valid, and introduced by the
+serialization fix itself.** `handleReset()` swaps in a new queue, but a write
+already hashing on the *old* one still resolves afterwards, and `publish()`
+set state unconditionally. The old session's trail would be painted over the
+fresh one.
+
+Reset is the **only exit from EPOCHÉ lockout**, so this is exactly the moment
+stale audit evidence must not reappear — the operator resets to leave a
+compromised session and is shown that session's records.
+
+`publish()` now takes the queue the write came from and discards the result
+if `auditQueueRef.current` has moved on. Mutation-tested twice: removing the
+identity check, and passing a live queue reference at one call site instead
+of the captured one, both fail the gate.
+
+**Honest limit, recorded in the test:** the guard is asserted structurally,
+not behaviourally. It lives in a component this suite cannot render. Making
+it behavioural would mean pushing supersession into `AuditQueue` and widening
+its return type so every caller handles a stale case — more cost than a
+two-line identity check is worth. What is gated is that the guard exists and
+that no call site bypasses it, not that it fires.
+
+## The same mistake twice: source assertions matching their own prose
+
+Two of the `evals/` source checks matched a word inside their own explanatory
+comment rather than the code. The ordering check passed on its first run
+because "await" appears in the comment above the `setState` it was meant to
+follow; the publish check then failed because `publish()` appears in a
+docstring.
+
+Fixed at the cause rather than per-site: a `codeOf()` helper strips block and
+line comments once, and every source assertion now reads through it. A gate
+that can be satisfied by its own documentation is the failure this thread is
+about, one layer up.

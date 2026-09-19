@@ -3,7 +3,10 @@ import type { DirectiveState } from '@/lib/types'
 import type { IntegrityState } from '@/lib/integrity'
 import type { ThemeId } from '@/data/themes'
 import { buildDefaultState, applySessionPreset } from '@/data/defaults'
-import { INTEGRITY_STATES, escalate } from '@/lib/integrity'
+import { INTEGRITY_STATES } from '@/lib/integrity'
+import { decideGateResult, recordGateResult } from '@/lib/enforcement'
+import { createAuditQueue } from '@/lib/audit-queue'
+import type { AuditQueue } from '@/lib/audit-queue'
 import { createAuditTrail, appendEntry } from '@/lib/audit'
 import type { AuditTrail, AuditAction, AuditExtras } from '@/lib/audit'
 import type { GateResult } from '@/lib/security'
@@ -37,50 +40,72 @@ export default function App() {
   const [state, setState]  = useState<DirectiveState>(session.state)
   const [apiKey, setApiKey] = useState('')
   const [mobileTab, setMobileTab] = useState<MobileTab>('config')
-  const [auditCount, setAuditCount] = useState(0)
+  // The audit trail is held in STATE, not read from the ref during render.
+  // Reading a ref while rendering is not reactive: the trail the panels got
+  // was whatever happened to be in the ref at that moment, and it did not
+  // re-render when a write landed — the on-screen entry count drifted from
+  // the real one. The ref (inside the queue) remains the write path; this is
+  // the read path, updated by `publish()` after every completed write.
+  const [auditTrail, setAuditTrail] = useState<AuditTrail>(session.audit)
   const isMobile         = useIsMobile()
   const integrity        = INTEGRITY_STATES[state.integrityState as IntegrityState]
   const sessionStarted   = useRef(false)
-  const auditTrailRef    = useRef<AuditTrail>(session.audit)
+  // All audit writes go through one queue. Two writers that each read the
+  // trail, await, then write back will silently drop one another's entries —
+  // and the surviving chain still verifies, so nothing downstream notices.
+  const auditQueueRef    = useRef(createAuditQueue(session.audit))
   useTheme(state.themeId as ThemeId)
 
   useEffect(() => {
     if (sessionStarted.current) return    // StrictMode second-fire guard
     sessionStarted.current = true         // set before any state call or async boundary
-    appendEntry(auditTrailRef.current, 'session-start').then(trail => {
-      auditTrailRef.current = trail
-    })
+    const queue = auditQueueRef.current
+    queue.enqueue(trail => appendEntry(trail, 'session-start')).then(t => publish(queue, t))
   }, [])
+
+  // Single publish point: the queue owns the write, this makes it visible.
+  //
+  // The queue argument is a session guard, not decoration. handleReset swaps
+  // in a new queue, but a write already hashing on the old one still resolves
+  // afterwards — and publishing it would paint the PREVIOUS session's audit
+  // trail over the fresh one. Reset is the only exit from EPOCHÉ lockout, so
+  // that is exactly the moment stale evidence must not reappear. A write from
+  // a superseded queue is discarded: its entries belong to a session that no
+  // longer exists.
+  function publish(queue: AuditQueue, trail: AuditTrail) {
+    if (auditQueueRef.current !== queue) return
+    setAuditTrail(trail)
+  }
 
   function applyPreset(mode: string) { setState(prev => applySessionPreset(prev, mode)) }
 
+  // Thin adapter. Enforcement lives in lib/enforcement.ts so it can be asserted
+  // without rendering the app — a fired TOBIRA is not evidence that the state
+  // escalated or that the chain recorded it.
+  //
+  // Two phases, and the order is a security property. The decision is
+  // synchronous and the latch is committed BEFORE the first await: hashing the
+  // audit entries takes real time, and until setState lands the pre-EPOCHÉ
+  // surface is still rendered with its actions live. Deciding and recording in
+  // one await would leave that window open for the duration of the write.
   async function handleGateResult(gateResult: GateResult) {
-    const { scanResult, recommendedTransition } = gateResult
-    if (!recommendedTransition) return  // clean input — latching invariant, no de-escalation
+    const decision = decideGateResult(
+      gateResult,
+      state.integrityState as IntegrityState,
+      state.firedTobiraIds,
+    )
+    if (!decision) return  // clean input — latching invariant, no de-escalation
 
-    const currentIntegrity = state.integrityState as IntegrityState
-    const nextIntegrity    = escalate(currentIntegrity, recommendedTransition)
-    const nextFiredIds     = [...new Set([...state.firedTobiraIds, ...scanResult.fired.map(t => t.id)])]
+    // Latch first. No await above this line.
+    setState(prev => ({
+      ...prev,
+      integrityState:  decision.nextIntegrity,
+      firedTobiraIds:  decision.nextFiredTobiraIds,
+    }))
 
-    // Snapshot invariant: use nextIntegrity everywhere below — never state.integrityState
-    setState(prev => ({ ...prev, integrityState: nextIntegrity, firedTobiraIds: nextFiredIds }))
-
-    // Direct ref mutation — no state update for audit entries; await chain in sequence
-    for (const tobira of scanResult.fired) {
-      auditTrailRef.current = await appendEntry(auditTrailRef.current, 'tobira-fired', {
-        tobiraId: tobira.id,
-        tobiraCode: tobira.auditCode,
-        secretsDetected: scanResult.secretsDetected,
-      })
-    }
-    if (nextIntegrity !== currentIntegrity) {
-      auditTrailRef.current = await appendEntry(
-        auditTrailRef.current,
-        nextIntegrity === 'EPOCHÉ' ? 'epoche-entered' : 'utsuroi-transition',
-        { fromState: currentIntegrity, toState: nextIntegrity }
-      )
-      auditTrailRef.current = { ...auditTrailRef.current, currentState: nextIntegrity }
-    }
+    // Then record, serialized against every other writer.
+    const queue = auditQueueRef.current
+    publish(queue, await queue.enqueue(t => recordGateResult(gateResult, decision, t)))
   }
 
   function handleApplyPatch(patch: DirectiveStatePatch) {
@@ -110,16 +135,18 @@ export default function App() {
     }))
   }
 
-  // Appends to ref — no re-render. Uses ref's currentState to avoid stale closure.
+  // Queued, so an append cannot race handleGateResult's writes and drop one.
   async function handleAuditEntry(action: AuditAction, extras: AuditExtras = {}) {
-    auditTrailRef.current = await appendEntry(auditTrailRef.current, action, extras)
-    setAuditCount(auditTrailRef.current.entries.length)
+    const queue = auditQueueRef.current
+    publish(queue, await queue.enqueue(t => appendEntry(t, action, extras)))
   }
 
   function handleReset() {
     const newState = buildDefaultState()
     setState(newState)
-    auditTrailRef.current = createAuditTrail(newState.sessionId)
+    const freshTrail = createAuditTrail(newState.sessionId)
+    auditQueueRef.current = createAuditQueue(freshTrail)
+    setAuditTrail(freshTrail)
     setApiKey('')
   }
 
@@ -157,13 +184,11 @@ export default function App() {
           RESET — restore ZANSHIN
         </button>
         <div style={{ fontFamily:'var(--mono-font)', fontSize:'9px', color:'rgba(200,80,128,0.4)', marginTop:'8px' }}>
-          session: {state.sessionId} · {state.firedTobiraIds.length} TOBIRA fired · {auditTrailRef.current.entries.length} audit entries
+          session: {state.sessionId} · {state.firedTobiraIds.length} TOBIRA fired · {auditTrail.entries.length} audit entries
         </div>
       </div>
     )
   }
-
-  const auditTrailSnapshot = auditTrailRef.current
 
   return (
     <div style={{ display:'flex', flexDirection:'column', height:'100dvh', background:'var(--cipher)', color:'var(--vellum)', overflow:'hidden' }}>
@@ -178,8 +203,8 @@ export default function App() {
           {state.firedTobiraIds.length > 0 && (
             <span style={{ fontFamily:'var(--mono-font)', fontSize:'8px', color:integrity.color, borderLeft:`1px solid ${integrity.color}`, paddingLeft:'8px' }}>{state.firedTobiraIds.length} TOBIRA</span>
           )}
-          {auditCount > 0 && (
-            <span style={{ fontFamily:'var(--mono-font)', fontSize:'8px', color:integrity.color, borderLeft:`1px solid ${integrity.color}`, paddingLeft:'8px', opacity:0.7 }}>{auditCount} ◈</span>
+          {auditTrail.entries.length > 0 && (
+            <span style={{ fontFamily:'var(--mono-font)', fontSize:'8px', color:integrity.color, borderLeft:`1px solid ${integrity.color}`, paddingLeft:'8px', opacity:0.7 }}>{auditTrail.entries.length} ◈</span>
           )}
         </div>
         {!isMobile && <StatusChips state={state} />}
@@ -189,13 +214,13 @@ export default function App() {
         {isMobile ? (
           <div style={{ flex:1, overflow:'hidden' }}>
             {mobileTab==='config' && <div style={{ height:'100%', overflowY:'auto' }}><MobileConfig state={state} onChange={handleMobileConfigChange} onApplyPreset={applyPreset} /></div>}
-            {mobileTab==='levers' && <div style={{ height:'100%', display:'flex', flexDirection:'column', overflow:'hidden' }}><LeverPanel state={state} onChange={setState} auditTrail={auditTrailSnapshot} integrityState={state.integrityState as IntegrityState} apiKey={apiKey} onSetApiKey={setApiKey} onGateResult={handleGateResult} onApplyPatch={handleApplyPatch} onApplyNarrative={handleApplyNarrative} onAuditEntry={handleAuditEntry} /></div>}
+            {mobileTab==='levers' && <div style={{ height:'100%', display:'flex', flexDirection:'column', overflow:'hidden' }}><LeverPanel state={state} onChange={setState} auditTrail={auditTrail} integrityState={state.integrityState as IntegrityState} apiKey={apiKey} onSetApiKey={setApiKey} onGateResult={handleGateResult} onApplyPatch={handleApplyPatch} onApplyNarrative={handleApplyNarrative} onAuditEntry={handleAuditEntry} /></div>}
             {mobileTab==='output' && <div style={{ height:'100%', display:'flex', flexDirection:'column', overflow:'hidden' }}><OutputPanel state={state} fullWidth /></div>}
           </div>
         ) : (
           <>
             <LeftRail state={state} onChange={setState} onApplyPreset={applyPreset} />
-            <LeverPanel state={state} onChange={setState} auditTrail={auditTrailSnapshot} integrityState={state.integrityState as IntegrityState} apiKey={apiKey} onSetApiKey={setApiKey} onGateResult={handleGateResult} onApplyPatch={handleApplyPatch} onApplyNarrative={handleApplyNarrative} onAuditEntry={handleAuditEntry} />
+            <LeverPanel state={state} onChange={setState} auditTrail={auditTrail} integrityState={state.integrityState as IntegrityState} apiKey={apiKey} onSetApiKey={setApiKey} onGateResult={handleGateResult} onApplyPatch={handleApplyPatch} onApplyNarrative={handleApplyNarrative} onAuditEntry={handleAuditEntry} />
             <OutputPanel state={state} />
           </>
         )}
