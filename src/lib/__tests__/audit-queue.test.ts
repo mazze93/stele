@@ -67,3 +67,66 @@ describe('audit queue', () => {
     expect(q.current().entries).toHaveLength(5)
   })
 })
+
+// === supersession: the reset race ===
+//
+// handleReset() replaces the queue, but a write already hashing on the old one
+// still resolves afterwards. Publishing it would repaint the PREVIOUS session's
+// trail over the fresh one — and reset is the only exit from EPOCHÉ lockout, so
+// the operator would be shown the records of the session they just left.
+//
+// App.tsx guards this by passing the originating queue to publish() and
+// discarding the result if the ref has moved on. That component cannot be
+// rendered here, so this models the same shape against the real queue to prove
+// the identity check is sufficient — the source gate in evals/ separately
+// asserts App.tsx still has it and that no call site bypasses it.
+
+describe('supersession across reset', () => {
+  it('a write in flight when the queue is replaced is not published', async () => {
+    const ref = { current: createAuditQueue(trail()) }        // models auditQueueRef
+    let published: AuditTrail | null = null
+    const publish = (from: typeof ref.current, t: AuditTrail) => {
+      if (ref.current !== from) return
+      published = t
+    }
+
+    const origin = ref.current
+    let release!: () => void
+    const held = new Promise<void>(r => { release = r })
+
+    const inFlight = origin
+      .enqueue(async t => { await held; return appendEntry(t, 'tobira-fired', { tobiraId: 'OLD' }) })
+      .then(t => publish(origin, t))
+
+    // Operator resets while that write is still hashing.
+    const freshTrail = createAuditTrail('session-2')
+    ref.current = createAuditQueue(freshTrail)
+    publish(ref.current, freshTrail)
+    expect(published).toBe(freshTrail)
+
+    release()
+    await inFlight
+
+    // The old write completed, and was discarded rather than painted over.
+    expect(published).toBe(freshTrail)
+    expect((published as unknown as AuditTrail).entries).toHaveLength(0)
+    expect(origin.current().entries.map(e => e.tobiraId)).toEqual(['OLD'])
+    expect(ref.current.current().entries).toHaveLength(0)
+  })
+
+  it('writes on the CURRENT queue still publish normally after a reset', async () => {
+    const ref = { current: createAuditQueue(trail()) }
+    let published: AuditTrail | null = null
+    const publish = (from: typeof ref.current, t: AuditTrail) => {
+      if (ref.current !== from) return
+      published = t
+    }
+
+    ref.current = createAuditQueue(createAuditTrail('session-2'))
+    const queue = ref.current
+    publish(queue, await queue.enqueue(t => appendEntry(t, 'session-start')))
+
+    expect(published).not.toBeNull()
+    expect((published as unknown as AuditTrail).entries).toHaveLength(1)
+  })
+})
