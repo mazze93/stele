@@ -3,7 +3,8 @@ import type { DirectiveState } from '@/lib/types'
 import type { IntegrityState } from '@/lib/integrity'
 import type { ThemeId } from '@/data/themes'
 import { buildDefaultState, applySessionPreset } from '@/data/defaults'
-import { INTEGRITY_STATES, escalate } from '@/lib/integrity'
+import { INTEGRITY_STATES } from '@/lib/integrity'
+import { applyGateResult } from '@/lib/enforcement'
 import { createAuditTrail, appendEntry } from '@/lib/audit'
 import type { AuditTrail, AuditAction, AuditExtras } from '@/lib/audit'
 import type { GateResult } from '@/lib/security'
@@ -54,33 +55,26 @@ export default function App() {
 
   function applyPreset(mode: string) { setState(prev => applySessionPreset(prev, mode)) }
 
+  // Thin adapter. The enforcement logic lives in lib/enforcement.ts so that it
+  // can be asserted without rendering the app — a fired TOBIRA is not evidence
+  // that the state escalated or that the chain recorded it, and that evidence
+  // was previously unreachable from a test.
   async function handleGateResult(gateResult: GateResult) {
-    const { scanResult, recommendedTransition } = gateResult
-    if (!recommendedTransition) return  // clean input — latching invariant, no de-escalation
+    const outcome = await applyGateResult(
+      gateResult,
+      state.integrityState as IntegrityState,
+      state.firedTobiraIds,
+      auditTrailRef.current,
+    )
+    if (!outcome) return  // clean input — latching invariant, no de-escalation
 
-    const currentIntegrity = state.integrityState as IntegrityState
-    const nextIntegrity    = escalate(currentIntegrity, recommendedTransition)
-    const nextFiredIds     = [...new Set([...state.firedTobiraIds, ...scanResult.fired.map(t => t.id)])]
-
-    // Snapshot invariant: use nextIntegrity everywhere below — never state.integrityState
-    setState(prev => ({ ...prev, integrityState: nextIntegrity, firedTobiraIds: nextFiredIds }))
-
-    // Direct ref mutation — no state update for audit entries; await chain in sequence
-    for (const tobira of scanResult.fired) {
-      auditTrailRef.current = await appendEntry(auditTrailRef.current, 'tobira-fired', {
-        tobiraId: tobira.id,
-        tobiraCode: tobira.auditCode,
-        secretsDetected: scanResult.secretsDetected,
-      })
-    }
-    if (nextIntegrity !== currentIntegrity) {
-      auditTrailRef.current = await appendEntry(
-        auditTrailRef.current,
-        nextIntegrity === 'EPOCHÉ' ? 'epoche-entered' : 'utsuroi-transition',
-        { fromState: currentIntegrity, toState: nextIntegrity }
-      )
-      auditTrailRef.current = { ...auditTrailRef.current, currentState: nextIntegrity }
-    }
+    setState(prev => ({
+      ...prev,
+      integrityState:  outcome.nextIntegrity,
+      firedTobiraIds:  outcome.nextFiredTobiraIds,
+    }))
+    auditTrailRef.current = outcome.auditTrail
+    setAuditCount(outcome.auditTrail.entries.length)
   }
 
   function handleApplyPatch(patch: DirectiveStatePatch) {

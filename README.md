@@ -349,7 +349,7 @@ The intentional fragility doctrine, the EPOCHÉ lockout with no override, the TO
 ## Known limits
 
 A harness that overstated its own perimeter would be the exact failure it was
-built to detect. Three things are true right now:
+built to detect. Four things are true right now:
 
 - **The Anthropic key lives in the browser.** Extraction and the collaborator
   call post directly from the page with `anthropic-dangerous-direct-browser-access`.
@@ -360,9 +360,31 @@ built to detect. Three things are true right now:
   [ADR-0004](docs/adr/0004-extraction-trust-boundary.md); not yet fixed.
 - **Detection is lexical.** The TOBIRA registry is regexes and predicates by
   deliberate choice ([ADR-0002](docs/adr/0002-deterministic-tripwires-over-model-judges.md)).
-  It is a good first filter, not comprehensive prompt-injection defence;
-  encoding, confusables and novel phrasing are a known blind spot. `evals/`
-  measures per-rule recall so the gap is tracked rather than assumed.
+  It is a good first filter, not comprehensive prompt-injection defence.
+  Novel phrasing that matches no pattern remains the accepted blind spot, and
+  `evals/` measures per-rule recall so the gap is tracked rather than assumed.
+- **Invisible-character evasion is closed; separator and homoglyph evasion is
+  not.** Until v1.1.2 a single Unicode format character defeated the entire
+  registry — `ig<U+200B>nore previous` fired nothing and was not blocked.
+  Detection now reads the raw input *and* an NFKC fold with category-Cf
+  characters removed, firing on either
+  ([ADR-0006](docs/adr/0006-detection-matches-a-fold-not-the-original.md)).
+
+  Held closed by a generated corpus — every Cf code point in the runtime
+  Unicode tables, at every insertion point of nine baselines — asserting that
+  no Unicode-only mutation may lower the fired set, plus a gate in `evals/`
+  that fails the build if detection ever collapses back to a single view.
+
+  Still open, and deliberately not papered over:
+  **intra-word separators** (`ig nore previous` has always evaded and still
+  does; NFKC maps U+00A0 to a plain space, so NBSP folds *into* this case
+  rather than out of it), **visual homoglyphs** (Cyrillic `о` for ASCII `o` —
+  NFKC is not a homoglyph defence and must not be described as one), and
+  **encoded payload differentials** (a base64 block raises a low-confidence
+  UNHEIMLICH signal via TW-007, but nothing decodes it, so the instruction
+  inside is never read as one — the signal is not coverage). Each of the three
+  is pinned by a quarantine test that fails if it silently starts passing, so
+  the gap cannot close unnoticed and cannot be quietly reclassified as fixed.
 - **The durable audit trail is optional and local.** `stele-core` owns the
   server-side hash chain and the `/api/sessions/:id/verify` replay, but it is
   not deployed and the browser does not yet call it. In the shipped

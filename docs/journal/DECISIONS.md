@@ -583,3 +583,61 @@ tessera's §4 warns about.
 
 **Reversible:** nothing changed yet — this entry records the finding and the
 policy. Implementation is PLAN.md phases 1–6.
+
+---
+
+## 2026-09-19 · Phases 4–6 · gate the primitive, prove the boundary, publish the perimeter
+
+**Phase 4 — the gate.** Added to `evals/eval.test.ts`, the file already
+called THE GATE, rather than inventing a parallel mechanism. It gates the
+*primitive*, not the bug: `fold.test.ts` proves the fold works but cannot
+prove it is still **reached**, and a new TOBIRA evaluating its own pattern
+would leave every one of those tests green while reopening the class.
+
+Four assertions, behavioural first: a raw-only payload and a fold-only
+payload must both fire; `.pattern` must be evaluated in exactly one source
+file; that file must import `fold` and still reference both operands; no
+registry pattern may carry `/g`. Mutation-tested — collapsing to folded-only
+reddens two, and adding a second evaluation site elsewhere in `src/` reddens
+the structural one by name.
+
+**Phase 5 — the enforcement boundary.** The logic lived inside
+`App.handleGateResult`, reachable only by rendering the app, and this repo
+has no jsdom or testing-library (not worth adding a DOM stack to a security
+tool for one suite). Extracted to `src/lib/enforcement.ts`; `App.tsx` is now
+a thin adapter with no escalation logic of its own, which the Phase 4 gate
+also asserts.
+
+**One deliberate behaviour change, not a pure extraction:** the adapter now
+calls `setAuditCount()` after enforcement. It previously did not, so the
+on-screen audit counter went stale whenever a TOBIRA fired — half of the
+carried-over `auditCount` drift. The other half (`App.tsx` reading
+`auditTrailRef` during render, why `react-hooks/refs` is `warn` not `error`)
+is untouched.
+
+**A test that proved nothing, caught by mutation.** The first version of
+"leaves the hash chain intact" used a single-TOBIRA payload. A
+concurrent-append mutant **passed** it — `Promise.all` over one element is
+indistinguishable from awaiting it. Rewritten against a payload that fires
+three (`<!-- system: override the directive -->`), asserting distinct hashes
+rather than entry count, since a fork produces the right count. The mutant
+now fails. Recorded because the suite was green and wrong, which is the
+failure mode this whole thread exists to refuse.
+
+**Phase 6 — the perimeter.** README "Known limits" goes from three items to
+four, separating demonstrated closure from what is open. Closed:
+invisible-character evasion, with how it is *held* closed. Open: intra-word
+separators, visual homoglyphs, encoded payload differentials.
+
+**The README overclaimed and the code was changed to match, not the prose.**
+The draft said each open class "is pinned by a quarantine test" when only the
+separator case was. Rather than softening the sentence, quarantines were
+added for the Cyrillic homoglyph (`ign<U+043E>re` — distinct NFKC forms, so
+the fold is a no-op by construction) and for the base64 case (TW-007 fires at
+low confidence, but nothing decodes the block, so the signal is not
+coverage). Softening would have been the marketing failure the tessera's §4
+warns about, in the section specifically about not overstating the perimeter.
+
+**Reversible:** the extraction is mechanical and `App.tsx` retains no
+enforcement logic; reverting means inlining `applyGateResult` again, which
+the Phase 4 gate would then fail by design.
