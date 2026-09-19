@@ -2,6 +2,7 @@
 // 13 named tripwires. Adding attack surface = adding a TOBIRA here.
 // Never patch ad-hoc. Coupling matrix derived from vocabulary Jaccard overlap.
 
+import { fold } from './fold'
 import type { StateTransition } from './integrity'
 
 export type ConfidenceLevel = 'low' | 'medium' | 'high'
@@ -215,9 +216,15 @@ const EXTRACTION_IDS = new Set(['TW-012','TW-013'])
 function runScan(input: string, ids: Set<string>): ScanResult {
   const fired: Tobira[] = []
   let secretsDetected = false
+  // ADR-0006: patterns match the FOLD, not the raw input. Raw code units are
+  // not the units the model reads, and one Cf character was enough to defeat
+  // every regex in the registry. The original is untouched and remains what
+  // gate() length-checks and what audit.ts hash-chains — nothing below
+  // returns folded content, only Tobira references and booleans.
+  const folded = fold(input)
   for (const t of TOBIRA_REGISTRY) {
     if (!ids.has(t.id)) continue
-    const matched = t.pattern instanceof RegExp ? t.pattern.test(input) : t.pattern(input)
+    const matched = t.pattern instanceof RegExp ? t.pattern.test(folded) : t.pattern(folded)
     if (matched) {
       fired.push(t)
       if (t.moduleId === 'apocrypha-scanner') secretsDetected = true
