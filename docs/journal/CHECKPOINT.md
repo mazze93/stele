@@ -100,3 +100,99 @@ first unchecked phase.
   Phase 6 generates real audit traffic against it
 - Whether Glimmer replaces or supplements `gemma4`/`llama3.1:8b` for
   existing local-swarm use, once Phase 5's numbers exist
+
+---
+
+<!-- Appended 2026-09-19. CHECKPOINT.md is marked -merge in .gitattributes
+     because it is a projection that gets rewritten, not a ledger. This is a
+     NEW dated section rather than a rewrite of the two above: the Glimmer
+     phases are paused (blocker changed shape — see DECISIONS 2026-09-19),
+     and overwriting them would erase a pause that still needs a decision. -->
+
+## Checkpoint
+
+**Last updated:** 2026-09-19 · v1.1.2 released; class-closure thread opened
+at Phase 0
+
+### Shipped this session
+
+- Reconciled `main` (was 11 commits behind), pruned 7 stale remote-tracking
+  refs, removed a dead worktree, deleted 4 fully-merged local branches
+- Merged #66 (hono 4.13.7 — XSS + path traversal + DoS advisories), #52
+  (workflow least-privilege permissions), #69, #71
+- Merged #72 — CI typecheck fix, the first run in this repo's history that
+  actually typechecked `src/`
+- Tagged and released **v1.1.2**; `bundle.html` 428,309 bytes attached
+
+### Current thread — Unicode format-character evasion
+
+- [x] **Phase 0** — journal scaffold, stage 1 exploit in the real execution
+      path, policy stated in English
+- [ ] **Phase 1** — ADR-0006 (the fold policy and its explicit non-coverage)
+- [ ] **Phase 2** — `src/lib/fold.ts`, leaf module, wired into the scanner
+- [ ] **Phase 3** — generated mutation corpus as executable invariant
+- [ ] **Phase 4** — build gate against raw-input matching in detection
+- [ ] **Phase 5** — enforcement-boundary evidence (escalate + appendEntry)
+- [ ] **Phase 6** — publish the remaining perimeter in README
+
+### To resume
+
+Read `CHECKPOINT.md` → `PLAN.md` → `DECISIONS.md`, then start at Phase 1.
+The exploit is already established and the policy already stated — do not
+re-derive either. `DECISIONS.md` 2026-09-19 records the probe's own blind
+spot (NARIKIRI-002); do not mistake it for coverage.
+
+### Open PRs, triaged not merged
+
+- **#70** react-day-picker 9→10 — **breaks the build**, verified locally:
+  v10 drops the `table` key from `ClassNames`, so `calendar.tsx:85` fails
+  `tsc -b` with TS2353. Reported `mergeableState: clean` because CI was not
+  typechecking. Real choice: update the vendored component, or delete it —
+  `calendar.tsx` is imported by nothing.
+- **#68** dev-tools ×10 — contains **vitest 4 → 5**, a major, unprobed. The
+  suite is the security gate; this needs a local run before merging.
+- **#55** react 19.2.5 → 19.2.8 + @types/react — patch bumps only. Safe.
+  (Earlier in the session this was called a major. That was wrong.)
+
+All three also revert react-slot and react-resizable-panels and need a
+`@dependabot rebase` before they are mergeable as-is.
+
+### Deferred / needs the user
+
+- **Ollama is gone** — `/Applications/Ollama.app` is an empty directory,
+  `/usr/local/bin/ollama` dangles. Reinstall is a user decision; Glimmer
+  Phases 1–2 can proceed without it, 3+ cannot.
+- **Version drift** — resolved. `version.ts` derives from `package.json`
+  via vite `define` (#57). Both now read 1.1.2.
+- **Deploy shape** — still unresolved. Root `wrangler.toml` declares
+  `pages_build_output_dir = "dist"`; `site/README.md` documents direct
+  upload of `site/deploy`. One is stale. Untouched this session.
+- **Blog post corrections** — `stele-blog-post.md` in ProtonDrive, seven
+  verified factual errors. Still not applied.
+- **`projects.ts` self-entry is stale** — see the next section.
+
+### Found, not fixed — STELE's model of itself has drifted
+
+STELE governs projects from `src/data/projects.ts`. Its own entry
+(`id: 'directive-remixer'`) is stale in the same way the `secure-pride`
+entry was before #67 corrected it:
+
+- `root: '~/dev/stele'` — actual root is `~/Projects/tools/stele`. Exactly
+  the defect class #67 fixed for secure-pride (`~/dev/secure-pride`).
+- `stack` omits Tailwind v4, Radix/shadcn, zod, and all of `stele-core`
+  (Hono + Prisma).
+- openQuestion "bundle.html: vite-plugin-singlefile not yet wired" — it is
+  wired, `vite.config.ts:3,15`. Verifiably false.
+- Tessera T-009 is marked RESOLVED inline but still listed.
+- **T-010 is a live defect that CLAUDE.md retired on a wrong basis.**
+  CLAUDE.md retires it as referencing `src/policy/resolve.ts`, which does
+  not exist in this repo. But the T-010 in `projects.ts` points at
+  `src/lib/types.ts`, which does exist — and the inconsistency is still
+  there: `types.ts:37` declares `tesserae: Tessera[]` (required) while
+  `compiler.ts:105` uses `?? []` and `compiler.ts:455` uses
+  `p.tesserae?.length`. The retirement note closed a different ticket.
+
+The dogfooding question this came from is worth keeping in view: STELE
+compiles governance for seven projects and is the eighth, but nothing in
+the build regenerates or checks its own entry, and `stele-core`'s audit
+ledger has still never taken real traffic.
