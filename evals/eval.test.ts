@@ -105,6 +105,16 @@ describe('report', () => {
 
 const SRC = join(HERE, '..', 'src')
 
+// Source assertions must read CODE, not prose. Two of the checks below first
+// passed or failed against a word inside their own explanatory comment — the
+// literal failure this gate exists to prevent, one layer up. Strip comments
+// once, here, rather than remembering to do it at each call site.
+function codeOf(file: string): string {
+  return readFileSync(file, 'utf8')
+    .replace(/\/\*[\s\S]*?\*\//g, '')
+    .replace(/^\s*\/\/.*$/gm, '')
+}
+
 function sourceFiles(dir: string): string[] {
   return readdirSync(dir, { withFileTypes: true }).flatMap(e => {
     const full = join(dir, e.name)
@@ -147,12 +157,12 @@ describe('the fold cannot be routed around', () => {
     // What this does buy is that reintroducing the class by ordinary means
     // fails the build rather than passing review.
     const REACHES_PATTERN = /\.pattern\b|\[\s*['"`]pattern['"`]\s*\]|\{[^}]*\bpattern\b[^}]*\}\s*=/
-    const sites = sourceFiles(SRC).filter(f => REACHES_PATTERN.test(readFileSync(f, 'utf8')))
+    const sites = sourceFiles(SRC).filter(f => REACHES_PATTERN.test(codeOf(f)))
     expect(sites.map(f => f.split('/src/')[1])).toEqual(['lib/tripwires.ts'])
   })
 
   it('that file imports the fold and still reads both views', () => {
-    const src = readFileSync(join(SRC, 'lib', 'tripwires.ts'), 'utf8')
+    const src = codeOf(join(SRC, 'lib', 'tripwires.ts'))
     expect(src).toMatch(/import\s*\{\s*fold\s*\}\s*from\s*'\.\/fold'/)
     // Both operands present. Deliberately a source assertion: dropping either
     // one is a silent, test-green regression at every other layer.
@@ -171,7 +181,7 @@ describe('the fold cannot be routed around', () => {
   // The enforcement boundary has one implementation too. App.tsx is an
   // adapter; escalation logic living there again would be untestable.
   it('escalation happens in lib/enforcement.ts, not in App.tsx', () => {
-    const app = readFileSync(join(SRC, 'App.tsx'), 'utf8')
+    const app = codeOf(join(SRC, 'App.tsx'))
     expect(app).toMatch(/decideGateResult/)
     expect(app).toMatch(/recordGateResult/)
     expect(app).not.toMatch(/\bescalate\s*\(/)
@@ -182,12 +192,9 @@ describe('the fold cannot be routed around', () => {
   // take to write. This was a real regression, caught in review, and it is
   // exactly the kind that no behavioural assertion in this repo can see.
   it('handleGateResult latches integrity state before it awaits anything', () => {
-    const app = readFileSync(join(SRC, 'App.tsx'), 'utf8')
+    const app = codeOf(join(SRC, 'App.tsx'))
     const body = app.slice(app.indexOf('async function handleGateResult'))
-    // Strip line comments first — the prose in this function talks about
-    // awaiting, and matching that instead of the code made the check pass
-    // for the wrong reason on its first run.
-    const fn = body.slice(0, body.indexOf('\n  }')).replace(/^\s*\/\/.*$/gm, '')
+    const fn = body.slice(0, body.indexOf('\n  }'))
 
     const firstSetState = fn.indexOf('setState(')
     const firstAwait = fn.indexOf('await ')
@@ -204,15 +211,39 @@ describe('the fold cannot be routed around', () => {
   // the queue's accessor — verified by probe, not assumed — so the render-time
   // read could return in that form with lint still clean. This covers it.
   it('App.tsx reads the audit trail from state, never from the ref', () => {
-    const app = readFileSync(join(SRC, 'App.tsx'), 'utf8')
+    const app = codeOf(join(SRC, 'App.tsx'))
     expect(app).not.toMatch(/auditQueueRef\.current\.current\s*\(/)
   })
 
   it('App.tsx never appends to the audit trail outside the queue', () => {
-    const app = readFileSync(join(SRC, 'App.tsx'), 'utf8')
+    const app = codeOf(join(SRC, 'App.tsx'))
     for (const call of app.match(/appendEntry\([^)]*/g) ?? []) {
       expect(call).not.toMatch(/appendEntry\(\s*auditTrail/)
     }
-    expect(app).toMatch(/auditQueueRef\.current\.enqueue/)
+    expect(app).toMatch(/\.enqueue\(/)
+  })
+
+  // handleReset swaps the queue, but a write already hashing on the old one
+  // still resolves afterwards. Publishing it repaints the PREVIOUS session's
+  // audit trail over the fresh one — and reset is the only exit from EPOCHÉ
+  // lockout, so that is precisely where stale evidence must not reappear.
+  //
+  // Structural, not behavioural, and that is a real limit: the guard lives in
+  // a component this suite cannot render, so what is asserted is that the
+  // guard is present and that no call site bypasses it — not that it fires.
+  // Making it behavioural would mean pushing supersession into AuditQueue and
+  // widening its return type for every caller to handle one case, which buys
+  // less than it costs for a two-line identity check.
+  it('publish discards writes from a superseded queue', () => {
+    const app = codeOf(join(SRC, 'App.tsx'))
+
+    // The guard itself.
+    expect(app).toMatch(/function publish\(\s*queue: AuditQueue/)
+    expect(app).toMatch(/if \(auditQueueRef\.current !== queue\) return/)
+
+    // And no caller may bypass it by publishing a bare trail.
+    for (const call of app.match(/\bpublish\([^)]*/g) ?? []) {
+      expect(call).toMatch(/publish\(\s*queue/)
+    }
   })
 })

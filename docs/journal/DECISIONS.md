@@ -694,3 +694,42 @@ evaluator, which the widened guard names by file.
 **`claude-review` failed on infrastructure**, not findings — `is_error:true`
 with "No buffered inline comments" and an internal directory-mismatch
 message. Not a signal about the code; not chased.
+
+---
+
+## 2026-09-19 · Reset could repaint the previous session's audit trail
+
+**Greptile P1 on the second review pass, valid, and introduced by the
+serialization fix itself.** `handleReset()` swaps in a new queue, but a write
+already hashing on the *old* one still resolves afterwards, and `publish()`
+set state unconditionally. The old session's trail would be painted over the
+fresh one.
+
+Reset is the **only exit from EPOCHÉ lockout**, so this is exactly the moment
+stale audit evidence must not reappear — the operator resets to leave a
+compromised session and is shown that session's records.
+
+`publish()` now takes the queue the write came from and discards the result
+if `auditQueueRef.current` has moved on. Mutation-tested twice: removing the
+identity check, and passing a live queue reference at one call site instead
+of the captured one, both fail the gate.
+
+**Honest limit, recorded in the test:** the guard is asserted structurally,
+not behaviourally. It lives in a component this suite cannot render. Making
+it behavioural would mean pushing supersession into `AuditQueue` and widening
+its return type so every caller handles a stale case — more cost than a
+two-line identity check is worth. What is gated is that the guard exists and
+that no call site bypasses it, not that it fires.
+
+## The same mistake twice: source assertions matching their own prose
+
+Two of the `evals/` source checks matched a word inside their own explanatory
+comment rather than the code. The ordering check passed on its first run
+because "await" appears in the comment above the `setState` it was meant to
+follow; the publish check then failed because `publish()` appears in a
+docstring.
+
+Fixed at the cause rather than per-site: a `codeOf()` helper strips block and
+line comments once, and every source assertion now reads through it. A gate
+that can be satisfied by its own documentation is the failure this thread is
+about, one layer up.

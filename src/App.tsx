@@ -6,6 +6,7 @@ import { buildDefaultState, applySessionPreset } from '@/data/defaults'
 import { INTEGRITY_STATES } from '@/lib/integrity'
 import { decideGateResult, recordGateResult } from '@/lib/enforcement'
 import { createAuditQueue } from '@/lib/audit-queue'
+import type { AuditQueue } from '@/lib/audit-queue'
 import { createAuditTrail, appendEntry } from '@/lib/audit'
 import type { AuditTrail, AuditAction, AuditExtras } from '@/lib/audit'
 import type { GateResult } from '@/lib/security'
@@ -58,11 +59,23 @@ export default function App() {
   useEffect(() => {
     if (sessionStarted.current) return    // StrictMode second-fire guard
     sessionStarted.current = true         // set before any state call or async boundary
-    auditQueueRef.current.enqueue(trail => appendEntry(trail, 'session-start')).then(publish)
+    const queue = auditQueueRef.current
+    queue.enqueue(trail => appendEntry(trail, 'session-start')).then(t => publish(queue, t))
   }, [])
 
   // Single publish point: the queue owns the write, this makes it visible.
-  function publish(trail: AuditTrail) { setAuditTrail(trail) }
+  //
+  // The queue argument is a session guard, not decoration. handleReset swaps
+  // in a new queue, but a write already hashing on the old one still resolves
+  // afterwards — and publishing it would paint the PREVIOUS session's audit
+  // trail over the fresh one. Reset is the only exit from EPOCHÉ lockout, so
+  // that is exactly the moment stale evidence must not reappear. A write from
+  // a superseded queue is discarded: its entries belong to a session that no
+  // longer exists.
+  function publish(queue: AuditQueue, trail: AuditTrail) {
+    if (auditQueueRef.current !== queue) return
+    setAuditTrail(trail)
+  }
 
   function applyPreset(mode: string) { setState(prev => applySessionPreset(prev, mode)) }
 
@@ -91,9 +104,8 @@ export default function App() {
     }))
 
     // Then record, serialized against every other writer.
-    publish(await auditQueueRef.current.enqueue(
-      t => recordGateResult(gateResult, decision, t),
-    ))
+    const queue = auditQueueRef.current
+    publish(queue, await queue.enqueue(t => recordGateResult(gateResult, decision, t)))
   }
 
   function handleApplyPatch(patch: DirectiveStatePatch) {
@@ -125,7 +137,8 @@ export default function App() {
 
   // Queued, so an append cannot race handleGateResult's writes and drop one.
   async function handleAuditEntry(action: AuditAction, extras: AuditExtras = {}) {
-    publish(await auditQueueRef.current.enqueue(t => appendEntry(t, action, extras)))
+    const queue = auditQueueRef.current
+    publish(queue, await queue.enqueue(t => appendEntry(t, action, extras)))
   }
 
   function handleReset() {
