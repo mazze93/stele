@@ -1,5 +1,5 @@
 import "dotenv/config";
-import { prisma } from "../lib/prisma.js";
+import { getNodePrisma } from "../lib/prisma.js";
 import {
   PostureLevel,
   VerbosityLevel,
@@ -7,6 +7,9 @@ import {
   AuditActionType,
   IntegrityState,
 } from "../generated/prisma/client.js";
+import { generateSessionToken, hashSessionToken } from "../src/lib/session-token.js";
+
+const prisma = getNodePrisma();
 
 async function main() {
   console.log("Seeding stele-core...");
@@ -211,6 +214,11 @@ async function main() {
   });
 
   // ─── Agent Sessions — one per posture tier ───
+  //
+  // These are historical fixture sessions, not live ones — each still needs
+  // a valid tokenHash to satisfy the NOT NULL unique constraint, but the raw
+  // token itself is discarded immediately; nothing should ever authenticate
+  // as one of these seeded sessions.
 
   const guardianSession = await prisma.agentSession.create({
     data: {
@@ -220,6 +228,7 @@ async function main() {
       hygieneTrigger: HygieneTrigger.TURN_BASED,
       hygieneAfterN: 3,
       activeProjectIds: [stele.id, pa.id],
+      tokenHash: hashSessionToken(generateSessionToken()),
       startedAt: new Date("2026-06-08T14:00:00Z"),
       endedAt: new Date("2026-06-08T14:47:00Z"),
     },
@@ -233,6 +242,7 @@ async function main() {
       hygieneTrigger: HygieneTrigger.OFF,
       hygieneAfterN: 3,
       activeProjectIds: [stele.id],
+      tokenHash: hashSessionToken(generateSessionToken()),
       startedAt: new Date("2026-06-07T10:00:00Z"),
       endedAt: new Date("2026-06-07T10:22:00Z"),
     },
@@ -246,6 +256,7 @@ async function main() {
       hygieneTrigger: HygieneTrigger.ON_COPY,
       hygieneAfterN: 5,
       activeProjectIds: [sp.id, pa.id],
+      tokenHash: hashSessionToken(generateSessionToken()),
       startedAt: new Date("2026-06-06T09:00:00Z"),
       endedAt: new Date("2026-06-06T09:58:00Z"),
     },

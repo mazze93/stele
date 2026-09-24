@@ -5,3 +5,4 @@ node_modules/
 generated/
 dist/
 *.js.map
+.wrangler/
