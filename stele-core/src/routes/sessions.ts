@@ -91,9 +91,10 @@ sessions.get("/:id", async (c) => {
   const session = await prisma.agentSession.findUnique({
     where: { id: c.req.param("id") },
     include: {
-      // Same tiebreaker as the verify replay, so a trail read here and a chain
-      // replayed there always agree on order.
-      auditTrail: { orderBy: [{ timestamp: "asc" }, { id: "asc" }] },
+      // Same ordering key as the verify replay (`seq`, not `timestamp` — see
+      // the AuditEntry.seq comment in schema.prisma), so a trail read here
+      // and a chain replayed there always agree on order.
+      auditTrail: { orderBy: { seq: "asc" } },
       stateSnapshots: { orderBy: { capturedAt: "desc" } },
     },
   });
@@ -114,7 +115,6 @@ sessions.post(
   async (c) => {
     const sessionId = c.req.param("id");
     const body = c.req.valid("json");
-    const ts = new Date();
 
     try {
       const entry = await prisma.$transaction(
@@ -128,13 +128,19 @@ sessions.post(
 
           const prev = await tx.auditEntry.findFirst({
             where: { sessionId },
-            // `timestamp` alone is not a total order: it is ms-precision and
-            // two sequential appends can land in the same tick, at which point
-            // Postgres may return either first. Picking the wrong predecessor
-            // silently forks the chain. `id` breaks the tie deterministically.
-            orderBy: [{ timestamp: "desc" }, { id: "desc" }],
+            // `seq` is the durable ordering key (see AuditEntry.seq in
+            // schema.prisma) — allocated at INSERT time inside this same
+            // transaction, so it always reflects true causal/commit order.
+            orderBy: { seq: "desc" },
             select: { integrityHash: true },
           });
+
+          // Sampled here, not before the transaction starts: this is hash
+          // preimage/display data only (ordering is `seq`'s job), but a
+          // timestamp sampled before a request even reached its transaction
+          // is a worse record of "when" than one sampled at the point of
+          // writing.
+          const ts = new Date();
 
           const integrityHash = chainHash(
             prev?.integrityHash ?? GENESIS_HASH,
@@ -194,10 +200,11 @@ sessions.get("/:id/verify", async (c) => {
 
   const entries = await prisma.auditEntry.findMany({
     where: { sessionId },
-    // Must match the append-side tiebreaker exactly. Replaying in a different
+    // Must match the append-side ordering key exactly (`seq`, see the
+    // AuditEntry.seq comment in schema.prisma). Replaying in a different
     // order than the chain was built in reports `valid: false` on an intact
     // ledger — a false alarm from the one endpoint whose job is to be trusted.
-    orderBy: [{ timestamp: "asc" }, { id: "asc" }],
+    orderBy: { seq: "asc" },
   });
 
   return c.json({ sessionId, verification: verifyChain(entries, sessionId) });

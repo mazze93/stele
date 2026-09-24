@@ -185,7 +185,22 @@ model AuditEntry {
 
   timestamp DateTime @default(now())
 
-  @@index([sessionId, timestamp])
+  // The chain's real ordering key. `nextval()` is consumed at INSERT time,
+  // inside the append transaction, after the predecessor lookup — so it
+  // always reflects true causal/commit order. `timestamp` cannot: it is
+  // request-time data (sampled before the transaction, or subject to clock
+  // skew) and using it as an ordering key let a slow request's stale
+  // timestamp outrank a predecessor that had already committed with a
+  // later one, silently inverting replay order relative to the actual
+  // hash chain. `seq` is what both predecessor selection (sessions.ts
+  // POST /:id/events) and replay (GET /:id/verify) order by; `timestamp`
+  // stays purely as hash-preimage/display data.
+  // Int (not BigInt): GET /:id/verify and GET /:id return AuditEntry rows
+  // through Hono's c.json(), which throws on a BigInt field. A 32-bit serial
+  // is ample for a per-row audit sequence.
+  seq Int @default(autoincrement())
+
+  @@index([sessionId, seq])
   @@index([action, timestamp])
   @@index([tobiraId])
 }
