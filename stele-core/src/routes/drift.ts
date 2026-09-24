@@ -1,5 +1,5 @@
 import { Hono } from "hono";
-import { prisma } from "../../lib/prisma.js";
+import { getPrisma } from "../../lib/prisma.js";
 
 export const drift = new Hono();
 
@@ -7,6 +7,7 @@ export const drift = new Hono();
 // This is the portfolio piece: shows TOBIRA firing frequency, state distribution,
 // secrets-detected rates, and session health over time.
 drift.get("/", async (c) => {
+  const prisma = getPrisma(c);
   const [
     stateDistribution,
     tobiraFrequency,

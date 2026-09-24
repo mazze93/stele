@@ -155,6 +155,14 @@ model AgentSession {
   startedAt  DateTime  @default(now())
   endedAt    DateTime?
 
+  // SHA-256 of a per-session bearer token, minted once at POST /api/sessions
+  // and returned to the caller exactly then — never stored or logged in the
+  // clear. Lets an anonymous browser client (STELE ships as a single-file
+  // HTML bundle with no server component to hold a shared API_SECRET) write
+  // to and read only the one session it created, without needing the
+  // server-to-server admin secret. See middleware/session-auth.ts.
+  tokenHash String @unique
+
   auditTrail     AuditEntry[]
   stateSnapshots StateSnapshot[]
 

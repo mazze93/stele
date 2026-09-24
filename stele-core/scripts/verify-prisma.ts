@@ -1,5 +1,7 @@
 import "dotenv/config";
-import { prisma } from "../lib/prisma.js";
+import { getNodePrisma } from "../lib/prisma.js";
+
+const prisma = getNodePrisma();
 
 const [projects, sessions, auditTotal, tobiraFirings] = await Promise.all([
   prisma.project.count(),

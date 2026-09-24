@@ -30,7 +30,16 @@ export function createApp() {
 
   // Perimeter. Ordered after cors() so preflights are answered without a token,
   // and before every route so no /api/* path is anonymously reachable.
-  app.use("/api/*", requireBearer);
+  //
+  // /api/sessions is exempted from the blanket admin-secret requirement: it
+  // has its own per-route auth (src/routes/sessions.ts), because POST
+  // /api/sessions must be reachable by an anonymous browser client that
+  // cannot hold API_SECRET, and every other /api/sessions/:id/* route is
+  // gated by that session's own token instead (src/middleware/session-auth.ts).
+  // /api/projects and /api/drift are cross-session/admin views with no
+  // per-resource token to check against, so they keep the blanket secret.
+  app.use("/api/projects/*", requireBearer);
+  app.use("/api/drift/*", requireBearer);
 
   // Health check
   app.get("/health", (c) =>

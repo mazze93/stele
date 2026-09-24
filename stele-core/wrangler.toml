@@ -1,0 +1,15 @@
+name = "stele-core"
+main = "src/worker.ts"
+compatibility_date = "2026-09-24"
+compatibility_flags = ["nodejs_compat"]
+
+# Provisioned separately — see README.md "Deploy". Hyperdrive pools an
+# existing Postgres; it does not create one. Replace `id` with the real
+# config id after running:
+#   npx wrangler hyperdrive create stele-core-db --connection-string="<postgres-url>"
+[[hyperdrive]]
+binding = "HYPERDRIVE"
+id = "REPLACE_WITH_HYPERDRIVE_CONFIG_ID"
+
+# API_SECRET is a secret, not a var — set with:
+#   npx wrangler secret put API_SECRET
