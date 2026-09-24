@@ -36,14 +36,17 @@ export default defineConfig([
         destructuredArrayIgnorePattern: '^_',
       }],
 
-      // Warn, not error, and deliberately not off. App.tsx reads auditTrailRef
-      // during render — the ref itself is intentional (the audit trail must not
-      // re-render the app on every appended entry), but reading it during
-      // render is not reactive, which is the known audit-counter drift. That
-      // fix is a UI-layer refactor tracked separately; until it lands the rule
-      // stays visible in lint output instead of being silenced. Restore to
-      // 'error' once App.tsx no longer reads the ref during render.
-      'react-hooks/refs': 'warn',
+      // Restored to 'error' 2026-09-19. It was 'warn' because App.tsx read
+      // auditTrailRef during render — not reactive, and the source of the
+      // audit-counter drift. The trail is now held in state and published
+      // after each queued write, so nothing reads a ref while rendering and
+      // the rule has no remaining exceptions to tolerate.
+      //
+      // Verified by probe that this rule does error on a plain ref read during
+      // render. It does NOT flag a read through an accessor on the ref's value
+      // (`queueRef.current.current()`), so that form is gated in evals/ instead
+      // — lint alone would stay clean while the drift came back.
+      'react-hooks/refs': 'error',
     },
   },
   {
