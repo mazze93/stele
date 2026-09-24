@@ -1,17 +1,55 @@
 name: typecheck
 on: [push, pull_request]
+permissions:
+  contents: read
 jobs:
   tsc:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
-      - uses: pnpm/action-setup@0ebf47130e4866e96fce0953f49152a61190b271 # v6
-        with:
-          version: 10
+      - uses: pnpm/action-setup@0977fd99725f1db4007ccb2928dbb4e90d06cc86 # v6
       - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
           node-version: 24
           cache: pnpm
       - run: pnpm install --frozen-lockfile
-      - run: npx tsc --noEmit
+      # `tsc --noEmit` alone is a no-op here: the root tsconfig.json is a
+      # solution file (`"files": []` + `references`), so a non-`-b` invocation
+      # compiles zero files and exits 0 no matter what `src/` contains. It was
+      # green against a deliberate type error. `-b` walks the referenced
+      # projects and checks all 1401 files, cold or warm.
+      - run: npx tsc -b --noEmit
+      - run: pnpm lint
       - run: pnpm test
+
+  # stele-core is a separate package with its own lockfile (npm, not pnpm) and
+  # was not covered by CI at all — it reached main with live type errors once
+  # already, and it now holds the /api/* auth perimeter and the audit chain,
+  # which is the last code in this repo that should go unchecked.
+  stele-core:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: stele-core
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: stele-core/package-lock.json
+      - run: npm ci
+      # The Prisma client is generated, gitignored, and required for tsc to
+      # resolve the model types — without this step the typecheck fails on a
+      # fresh checkout for a reason that has nothing to do with the code.
+      # `prisma generate` never connects to the database, but prisma.config.ts
+      # resolves env("DATABASE_URL") eagerly and throws if it is missing, so a
+      # syntactically valid placeholder is required. It is never dialled.
+      - run: npx prisma generate
+        env:
+          DATABASE_URL: postgresql://ci:ci@localhost:5432/ci
+      - run: npx tsc --noEmit
+      # No database required — the suite covers the chain encoding, the /api/*
+      # perimeter, the schema invariants, and the write-conflict classifier,
+      # all of which are pure or exercised through Hono's request handler.
+      - run: npm test

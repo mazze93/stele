@@ -3,22 +3,27 @@ import type { Project } from '@/lib/types'
 export const PROJECTS: Project[] = [
   {
     id: 'secure-pride', label: 'Secure Pride', scope: 'SP',
-    stack: 'Python · FreeRADIUS · step-ca · Mosyle · UniFi · Swift (MacProbe)',
+    // Corrected 2026-09-11: the prior stack line (FreeRADIUS/step-ca/Mosyle/
+    // UniFi/MacProbe) described a superseded 802.1x/MDM conception of this
+    // project with zero matches anywhere in the current repo. What actually
+    // exists: an Astro/Cloudflare site with a Rust/WASM AI Safety Scanner,
+    // published as a container to GHCR.
+    stack: 'Astro 5 · Cloudflare Pages/Workers · Rust/WASM (AI Safety Scanner) · Docker/GHCR',
     posture: 'MAX',
     compliance: ['GDPR','CCPA','SOGI','WCAG 2.1 AA'],
     hardStops: [
       'localStorage for sensitive data',
       'innerHTML with untrusted input',
       'SOGI attribute inference from behavioral data',
-      'Unmasked identifiers in audit logs',
-      'Any remote transmission from MacProbe',
-      'WebAuthn bypass or password fallback on sensitive flows',
+      'Unmasked identifiers in scan output or audit logs',
+      'Long-lived registry/CI credentials committed to config or workflow files',
+      'Publishing a container image with a known CRITICAL/HIGH CVE',
     ],
     openQuestions: [
-      'Secure Pride 802.1x build order: FreeRADIUS+step-ca → UniFi → Mosyle → cert lifecycle validation',
+      'Kintsugi V2 token bridge: secure-pride-design is the design-language source of truth; src/styles/tokens.css is still a manually-synced mirror pending an automated bridge (Phase 4).',
     ],
     tesserae: [],
-    root: '~/dev/secure-pride',
+    root: '~/Projects/secure-pride/secure-pride',
   },
   {
     id: 'mazzeleczzare', label: 'mazzeleczzare.com', scope: 'MZ',
