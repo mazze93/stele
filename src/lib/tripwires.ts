@@ -2,6 +2,7 @@
 // 13 named tripwires. Adding attack surface = adding a TOBIRA here.
 // Never patch ad-hoc. Coupling matrix derived from vocabulary Jaccard overlap.
 
+import { fold } from './fold'
 import type { StateTransition } from './integrity'
 
 export type ConfidenceLevel = 'low' | 'medium' | 'high'
@@ -105,7 +106,9 @@ export const TOBIRA_REGISTRY: Tobira[] = [
   {
     id: 'TW-009', name: 'APOCRYPHA-APIKEY', glyph: 'Λ',
     description: 'API key or token pattern in pasted content',
-    pattern: /(?:sk-|pk_|rk_|ghp_|gho_|ghu_|ghs_|ghr_|eyJ)[A-Za-z0-9_\-]{20,}|(?:api[_-]?key|api[_-]?secret|access[_-]?token)\s*[:=]\s*[^\s]{16,}/i,
+    // `-` is last in the class, so it is a literal and needs no escape. This is
+    // a lint fix, not a detection change — the matched language is identical.
+    pattern: /(?:sk-|pk_|rk_|ghp_|gho_|ghu_|ghs_|ghr_|eyJ)[A-Za-z0-9_-]{20,}|(?:api[_-]?key|api[_-]?secret|access[_-]?token)\s*[:=]\s*[^\s]{16,}/i,
     confidence: 'high', transition: 'WABI',
     message: 'Credential or API key pattern detected. Content blocked.',
     auditCode: 'APOCRYPHA-001', moduleId: 'apocrypha-scanner',
@@ -213,9 +216,28 @@ const EXTRACTION_IDS = new Set(['TW-012','TW-013'])
 function runScan(input: string, ids: Set<string>): ScanResult {
   const fired: Tobira[] = []
   let secretsDetected = false
+  // ADR-0006: a TOBIRA fires if it matches the raw input OR the fold. Raw code
+  // units are not the units the model reads — one Cf character defeated every
+  // regex here — but folding alone is not a replacement, because NFKC is lossy
+  // in ways that HIDE structure from the JSON predicates: two NFKC-equivalent
+  // member names collapse to one key and JSON.parse keeps only the last value,
+  // so a 5-key patch folds to 4 and slips past TW-012/TW-013.
+  //
+  // Neither view dominates the other. Raw catches the collapse; the fold
+  // catches a fullwidth `customAppend` that raw reads as an unrelated key.
+  // Taking the union is what makes this monotonic: folding can only ever ADD
+  // detection, never remove it, which is the invariant the corpus asserts.
+  //
+  // The original is untouched and remains what gate() length-checks and what
+  // audit.ts hash-chains — nothing below returns content, only Tobira
+  // references and booleans. No pattern here carries /g, so re-testing the
+  // same RegExp against a second string cannot trip over lastIndex.
+  const folded = fold(input)
+  const foldIsRaw = folded === input
   for (const t of TOBIRA_REGISTRY) {
     if (!ids.has(t.id)) continue
-    const matched = t.pattern instanceof RegExp ? t.pattern.test(input) : t.pattern(input)
+    const hit = (s: string) => t.pattern instanceof RegExp ? t.pattern.test(s) : t.pattern(s)
+    const matched = hit(input) || (!foldIsRaw && hit(folded))
     if (matched) {
       fired.push(t)
       if (t.moduleId === 'apocrypha-scanner') secretsDetected = true

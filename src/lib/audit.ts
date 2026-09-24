@@ -44,20 +44,35 @@ async function sha256(input: string): Promise<string> {
   return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2, '0')).join('')
 }
 
+// Part of the preimage — see stele-core/src/chain.ts. Must move in lockstep
+// with the server encoder; the two chains are independent but share a shape.
+const CHAIN_VERSION = 'v2'
+
+// Length-prefixed rather than joined on '|'. Pasted content reaches these
+// fields, so a delimiter appearing inside a value would make two different
+// events hash identically — the encoding has to be injective or the chain
+// stops being evidence. `${s.length}:${s}` reads back unambiguously.
+function field(s: string): string {
+  return `${s.length}:${s}`
+}
+
+function list(xs: string[] | undefined): string {
+  return field((xs ?? []).map(field).join(''))
+}
+
 function chainInput(prevHash: string, action: AuditAction, extras: AuditExtras, sessionId: string, ts: string): string {
-  return [
-    prevHash,
-    action,
-    extras.tobiraId ?? '',
-    extras.tobiraCode ?? '',
-    extras.fromState ?? '',
-    extras.toState ?? '',
-    String(extras.secretsDetected ?? ''),
-    extras.fieldsExtracted?.join(',') ?? '',
-    extras.fieldsRejected?.join(',') ?? '',
-    sessionId,
-    ts,
-  ].join('|')
+  return CHAIN_VERSION
+    + field(prevHash)
+    + field(action)
+    + field(extras.tobiraId ?? '')
+    + field(extras.tobiraCode ?? '')
+    + field(extras.fromState ?? '')
+    + field(extras.toState ?? '')
+    + field(String(extras.secretsDetected ?? ''))
+    + list(extras.fieldsExtracted)
+    + list(extras.fieldsRejected)
+    + field(sessionId)
+    + field(ts)
 }
 
 export function createAuditTrail(sessionId: string): AuditTrail {

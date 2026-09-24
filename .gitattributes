@@ -1,0 +1,28 @@
+# Append-only ledgers merge by union.
+#
+# A ledger is written at the BOTTOM and never edited above the last entry, so
+# two branches that both append are not really in conflict — they each added
+# distinct lines, and the correct resolution is "keep both". `merge=union`
+# tells git exactly that, and it turns a hand-resolved conflict into a clean
+# auto-merge.
+#
+# Verified on a real divergence (stele, 3 ahead / 20 behind, add/add on all
+# three journal files): with this rule DECISIONS.md auto-merged with zero
+# conflict markers and all 20 entries from both sides preserved.
+#
+# Bottom-appending is what makes this SAFE, not merely tidy. Union merge
+# concatenates hunks in file order; with a prepended ledger the result is
+# interleaved nonsense, with an appended one it stays chronological.
+docs/journal/DECISIONS.md   merge=union
+
+# NOT union, deliberately:
+#
+#   CHECKPOINT.md  is a projection that gets rewritten, not appended. Union
+#                  would duplicate checklist items and resurrect ticked boxes.
+#   PLAN.md        is edited in place as phases change.
+#   *.golden.json  is generated; regenerate rather than merge.
+#
+# Both were left conflicting in the verification above, which is the correct
+# outcome — the rule discriminates rather than silencing everything.
+docs/journal/CHECKPOINT.md  -merge
+docs/journal/PLAN.md        -merge

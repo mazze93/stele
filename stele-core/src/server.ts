@@ -1,6 +1,7 @@
 import { Hono } from "hono";
 import { cors } from "hono/cors";
 import { logger } from "hono/logger";
+import { requireBearer } from "./middleware/auth.js";
 import { sessions } from "./routes/sessions.js";
 import { projects } from "./routes/projects.js";
 import { drift } from "./routes/drift.js";
@@ -18,12 +19,18 @@ export function createApp() {
         "https://stele.mazzeleczzare.com",
       ],
       allowMethods: ["GET", "POST", "PATCH", "OPTIONS"],
-      allowHeaders: ["Content-Type"],
+      // Authorization must be allowed or the browser blocks every authenticated
+      // request at the preflight — see middleware/auth.ts.
+      allowHeaders: ["Content-Type", "Authorization"],
       maxAge: 600,
     })
   );
 
   app.use("/api/*", logger());
+
+  // Perimeter. Ordered after cors() so preflights are answered without a token,
+  // and before every route so no /api/* path is anonymously reachable.
+  app.use("/api/*", requireBearer);
 
   // Health check
   app.get("/health", (c) =>

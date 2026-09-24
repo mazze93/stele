@@ -6,8 +6,43 @@ import {
   AppendEventSchema,
   EndSessionSchema,
 } from "../schemas.js";
+import { chainHash, verifyChain, GENESIS_HASH } from "../chain.js";
 
 export const sessions = new Hono();
+
+// Thrown inside the append transaction to abort it with a specific status.
+// A plain return cannot roll the transaction back.
+class AppendRejected extends Error {
+  constructor(readonly status: 404 | 409, message: string) {
+    super(message);
+  }
+}
+
+// Postgres raises SQLSTATE 40001 when a Serializable transaction cannot be
+// ordered. Prisma does NOT pass that string through: it normalizes
+// TransactionWriteConflict to code "P2034" with the fixed message "Transaction
+// failed due to a write conflict or a deadlock. Please retry your transaction".
+// Verified against the installed runtime — "40001" appears nowhere in
+// @prisma/client, so a substring match on the SQLSTATE never fires and a real
+// conflict would surface as an opaque 500 instead of the documented 409 retry.
+//
+// P2034 is the check that matters. The raw SQLSTATE is kept as a secondary
+// probe only because a driver-adapter error can reach us before Prisma
+// normalizes it; it is a fallback, never the primary signal.
+export function isSerializationFailure(err: unknown): boolean {
+  if (typeof err !== "object" || err === null) return false;
+
+  const code = (err as { code?: unknown }).code;
+  if (code === "P2034") return true;
+
+  // Driver-adapter path: node-postgres surfaces SQLSTATE on `code`, and Prisma
+  // may carry the original under `cause`.
+  if (code === "40001") return true;
+  const cause = (err as { cause?: { code?: unknown } }).cause;
+  if (cause && typeof cause === "object" && cause.code === "40001") return true;
+
+  return false;
+}
 
 // POST /api/sessions — Stele calls this at session start
 sessions.post("/", zValidator("json", CreateSessionSchema), async (c) => {
@@ -56,7 +91,9 @@ sessions.get("/:id", async (c) => {
   const session = await prisma.agentSession.findUnique({
     where: { id: c.req.param("id") },
     include: {
-      auditTrail: { orderBy: { timestamp: "asc" } },
+      // Same tiebreaker as the verify replay, so a trail read here and a chain
+      // replayed there always agree on order.
+      auditTrail: { orderBy: [{ timestamp: "asc" }, { id: "asc" }] },
       stateSnapshots: { orderBy: { capturedAt: "desc" } },
     },
   });
@@ -66,41 +103,105 @@ sessions.get("/:id", async (c) => {
 
 // POST /api/sessions/:id/events — hot path: Stele streams audit events here
 // Invariant: append-only — no deletes, no updates on this table
+//
+// The integrity hash is computed HERE, from the previous entry's hash, and is
+// never accepted from the caller. Session existence and open/closed state are
+// checked inside the same transaction as the append: checking them outside
+// leaves a window where a session ends between the check and the write.
 sessions.post(
   "/:id/events",
   zValidator("json", AppendEventSchema),
   async (c) => {
     const sessionId = c.req.param("id");
     const body = c.req.valid("json");
+    const ts = new Date();
 
-    // Verify session exists and is still open
-    const session = await prisma.agentSession.findUnique({
-      where: { id: sessionId },
-      select: { id: true, endedAt: true },
-    });
-    if (!session) return c.json({ error: "Session not found" }, 404);
-    if (session.endedAt)
-      return c.json({ error: "Session already ended" }, 409);
+    try {
+      const entry = await prisma.$transaction(
+        async (tx) => {
+          const session = await tx.agentSession.findUnique({
+            where: { id: sessionId },
+            select: { id: true, endedAt: true },
+          });
+          if (!session) throw new AppendRejected(404, "Session not found");
+          if (session.endedAt) throw new AppendRejected(409, "Session already ended");
 
-    const entry = await prisma.auditEntry.create({
-      data: {
-        sessionId,
-        action: body.action,
-        tobiraId: body.tobiraId,
-        tobiraCode: body.tobiraCode,
-        fromState: body.fromState,
-        toState: body.toState,
-        fieldsExtracted: body.fieldsExtracted,
-        fieldsRejected: body.fieldsRejected,
-        secretsDetected: body.secretsDetected,
-        integrityHash: body.integrityHash,
-      },
-      select: { id: true, timestamp: true, action: true },
-    });
+          const prev = await tx.auditEntry.findFirst({
+            where: { sessionId },
+            // `timestamp` alone is not a total order: it is ms-precision and
+            // two sequential appends can land in the same tick, at which point
+            // Postgres may return either first. Picking the wrong predecessor
+            // silently forks the chain. `id` breaks the tie deterministically.
+            orderBy: [{ timestamp: "desc" }, { id: "desc" }],
+            select: { integrityHash: true },
+          });
 
-    return c.json({ entry }, 201);
+          const integrityHash = chainHash(
+            prev?.integrityHash ?? GENESIS_HASH,
+            body,
+            sessionId,
+            ts.toISOString()
+          );
+
+          return tx.auditEntry.create({
+            data: {
+              sessionId,
+              action: body.action,
+              tobiraId: body.tobiraId,
+              tobiraCode: body.tobiraCode,
+              fromState: body.fromState,
+              toState: body.toState,
+              fieldsExtracted: body.fieldsExtracted,
+              fieldsRejected: body.fieldsRejected,
+              secretsDetected: body.secretsDetected,
+              timestamp: ts,
+              integrityHash,
+            },
+            select: { id: true, timestamp: true, action: true, integrityHash: true },
+          });
+        },
+        // Serializable: two concurrent appends must not both read the same
+        // predecessor and fork the chain. Read Committed — Postgres's default —
+        // permits exactly that. A serialization failure surfaces as a 409 for
+        // the caller to retry rather than a silently branched ledger.
+        { isolationLevel: "Serializable" }
+      );
+
+      return c.json({ entry }, 201);
+    } catch (err) {
+      if (err instanceof AppendRejected) {
+        return c.json({ error: err.message }, err.status);
+      }
+      if (isSerializationFailure(err)) {
+        return c.json({ error: "Concurrent append — retry" }, 409);
+      }
+      throw err;
+    }
   }
 );
+
+// GET /api/sessions/:id/verify — replay the stored chain and report the first
+// divergence. This is the half the browser could never provide: verification
+// by a party other than the writer.
+sessions.get("/:id/verify", async (c) => {
+  const sessionId = c.req.param("id");
+
+  const session = await prisma.agentSession.findUnique({
+    where: { id: sessionId },
+    select: { id: true },
+  });
+  if (!session) return c.json({ error: "Session not found" }, 404);
+
+  const entries = await prisma.auditEntry.findMany({
+    where: { sessionId },
+    // Must match the append-side tiebreaker exactly. Replaying in a different
+    // order than the chain was built in reports `valid: false` on an intact
+    // ledger — a false alarm from the one endpoint whose job is to be trusted.
+    orderBy: [{ timestamp: "asc" }, { id: "asc" }],
+  });
+
+  return c.json({ sessionId, verification: verifyChain(entries, sessionId) });
+});
 
 // PATCH /api/sessions/:id/end — close session and capture final StateSnapshot
 sessions.patch(

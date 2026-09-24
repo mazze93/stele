@@ -125,9 +125,12 @@ self-contained file dropped into a Claude session.
 
 Grown since the v1.0.0 build groups (all post-date the sequencing above):
 - `stele-core/` — separate Node service (own package.json, npm): Prisma
-  Postgres persistence layer for the audit ledger. Express-style routes in
-  `stele-core/src/routes/` (sessions, projects, drift), Zod schemas in
-  `stele-core/src/schemas.ts`, migrations + seed under `stele-core/prisma/`.
+  Postgres persistence layer for the audit ledger. **Hono**, not Express —
+  `createApp()` in `stele-core/src/server.ts` mounts routers from
+  `stele-core/src/routes/` (sessions, projects, drift) via `app.route()`, with
+  `@hono/zod-validator` against the schemas in `stele-core/src/schemas.ts`;
+  `@hono/node-server` serves it from `stele-core/index.ts`. Migrations + seed
+  under `stele-core/prisma/`. Don't reach for Express middleware idioms here.
 - `site/` — stele.mazzeleczzare.com landing page + hosted app, deployed to
   the `stele` Cloudflare Pages project by direct upload (see `site/README.md`;
   `deploy/` is assembled at deploy time, never committed).
@@ -136,6 +139,12 @@ Grown since the v1.0.0 build groups (all post-date the sequencing above):
 - `docs/adr/` — ADRs 0001–0003 (monotonic escalation, deterministic tripwires
   over model judges, boolean-only secret detection) — the written rationale
   behind the Architecture Constraints below.
+- `docs/superpowers/{plans,specs}/` — dated design docs from earlier build
+  phases (Group 2 wiring, narrative export). Historical: they record what was
+  intended at the time, not necessarily what shipped. Check source before
+  trusting one.
+- `docs/journal/` — `CHECKPOINT.md` → `PLAN.md` → `DECISIONS.md`, in that
+  order, is the cold-resume path for a long session. Append; never re-scaffold.
 
 **Fully wired:**
 - `integrity.ts` — `escalate()` called from `App.handleGateResult`; transitions fire on every TOBIRA
@@ -154,10 +163,20 @@ Grown since the v1.0.0 build groups (all post-date the sequencing above):
 
 ```
 React 19 · TypeScript · Vite · vite-plugin-singlefile · @dnd-kit/core + sortable
+Tailwind v4 · Radix primitives + shadcn layer in src/components/ui · zod
 Anthropic API (Group 4 only, gated behind security layer)
 Cipher Gothic design system — CSS vars, no hardcoded hex in components
 5 themes: cipher-gothic · secure-pride · operators-terminal · vellum-smoke · signal-blue
 ```
+
+**Tailwind is v4.** PostCSS goes through `@tailwindcss/postcss` — a v3-style
+`tailwindcss` plugin entry breaks the build. `components.json` configures the
+shadcn generator; `@/` resolves to `src/` (`tsconfig.app.json` + `vite.config.ts`).
+
+The Cipher Gothic rule and the Tailwind/Radix layer coexist: panels and
+integrity-bearing UI are styled with CSS vars by name, and `src/components/ui`
+holds the generated primitives. A hex literal in a component is a defect in
+either layer.
 
 Root: `~/Projects/tools/stele` (workspace v2, 2026-07-15 — see `~/Projects/WORKSPACE.md`)
 Compile output: `dist/bundle.html` — single fully self-contained file (all JS/CSS inlined).
@@ -175,8 +194,28 @@ pnpm lint          # eslint
 pnpm test          # vitest run — src/lib/__tests__ (security, tripwires, integrity, audit)
 ```
 
+Single test file / single case:
+
+```bash
+pnpm test src/lib/__tests__/tripwires.test.ts     # one suite
+npx vitest run -t "escalate never de-escalates"   # one case by name
+npx vitest watch src/lib/__tests__/security.test.ts
+```
+
 `stele-core/` is its own package (npm, `stele-core/package-lock.json`):
-`npm run dev` (tsx watch) / `npm start` from inside that directory.
+`npm run dev` (tsx watch) / `npm start` from inside that directory. Its `npm
+test` is still the exit-1 placeholder — it has no suite of its own.
+
+## CI
+
+`.github/workflows/typecheck.yml` runs on every push and pull request: pnpm 10 /
+Node 24, `pnpm install --frozen-lockfile`, then `npx tsc --noEmit` **and**
+`pnpm test`. A red suite blocks the same way a type error does — run both
+locally before touching the security layer rather than discovering it in CI.
+
+Also live: `codeql.yml` (code scanning), `release.yml`, and `claude.yml` /
+`claude-code-review.yml` (skips Dependabot PRs). Every action is SHA-pinned —
+keep it that way when editing a workflow.
 
 ---
 
@@ -197,8 +236,21 @@ pnpm test          # vitest run — src/lib/__tests__ (security, tripwires, inte
 
 ## OPEN QUESTIONS
 
-- User mode fork UI — `state.userModes` exists in state; no UI to create/fork modes yet
-- `projectNarratives` workflow — `src/lib/narrativeExport.ts` exists; confirm whether the copy-to-projects.ts loop is fully closed or still session-only
+- **User mode fork UI** — still open, and the shape of the gap is now known.
+  `state.userModes` is *read* in three places (`LeftRail.tsx:44,55`,
+  `MobileConfig.tsx:38,48`) and merged by `findMode()` (`modes.ts:44`), but
+  nothing writes it: there is no create/fork surface anywhere in the UI, so the
+  array is permanently `[]` in practice. `userModes` is also on the extractor's
+  forbidden-field list, which is correct and must stay — whatever UI gets built,
+  modes are authored by the operator, never by extraction.
+
+- **`projectNarratives` persistence — resolved, and the answer is "session-only."**
+  Not an open question any more. `narrativeExport.ts` is imported only by
+  `CollaboratorPanel.tsx`; there is no writer back into `src/data/projects.ts`.
+  Narratives live in `state.projectNarratives` for the session and are lost on
+  reset unless the operator copies them into `projects.ts` by hand. Treat the
+  manual copy as the intended loop until someone decides otherwise — don't
+  "fix" it by having the app write its own source files.
 
 Resolved / retired (2026-07-15 audit):
 - ~~T-009~~ — audit trail is SHA-256 hash-chained (`src/lib/audit.ts`); djb2 question is moot.
