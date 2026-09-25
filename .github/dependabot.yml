@@ -13,22 +13,22 @@ updates:
         applies-to: security-updates
         patterns:
           - "*"
-      # Group 2: Batch Astro and Cloudflare routine updates
-      core-frameworks:
+      # Group 2: Batch the Radix UI primitives — this repo's largest single
+      # dependency cluster, and the main source of one-PR-per-package lockfile
+      # churn (each was landing separately, colliding with every other branch
+      # that also touched package.json/pnpm-lock.yaml).
+      radix-ui:
         patterns:
-          - "@astrojs/*"
-          - "astro"
-          - "wrangler"
-          - "@cloudflare/*"
+          - "@radix-ui/*"
       # Group 3: Batch all other dev dependencies together
       dev-tools:
         dependency-type: "development"
         exclude-patterns:
           - "typescript" # Keep TS separate to monitor build breaks
-    # Ignore major version bumps for core packages to prevent unexpected breaking changes
-    ignore:
-      - dependency-name: "astro"
-        update-types: ["version-update:semver-major"]
+      # Group 4: Everything else runtime — catches whatever isn't Radix or a
+      # dev dependency, so routine bumps land as one weekly PR instead of many.
+      runtime-deps:
+        dependency-type: "production"
 
   # 2. GitHub Actions Ecosystem
   - package-ecosystem: "github-actions"

@@ -1,6 +1,9 @@
 import { Hono } from "hono";
 import { zValidator } from "@hono/zod-validator";
-import { prisma } from "../../lib/prisma.js";
+import { getPrisma } from "../../lib/prisma.js";
+import { requireBearer } from "../middleware/auth.js";
+import { requireSessionOrAdmin } from "../middleware/session-auth.js";
+import { generateSessionToken, hashSessionToken } from "../lib/session-token.js";
 import {
   CreateSessionSchema,
   AppendEventSchema,
@@ -44,9 +47,25 @@ export function isSerializationFailure(err: unknown): boolean {
   return false;
 }
 
-// POST /api/sessions — Stele calls this at session start
+// POST /api/sessions — Stele calls this at session start.
+//
+// Deliberately unauthenticated: STELE ships as a single-file HTML bundle
+// with no server component to hold the admin API_SECRET, so an anonymous
+// browser client cannot present it. A freshly minted, single-use-scope
+// session token is the credential instead — returned exactly once, here,
+// and never persisted in the clear (schema.prisma: AgentSession.tokenHash).
+// Every other /api/sessions/:id/* route requires either that token or the
+// admin secret (src/middleware/session-auth.ts).
+//
+// This does mean session creation itself has no floor beyond whatever rate
+// limiting sits in front of it (Cloudflare, at the deployed edge) — an open
+// perimeter item, not a silent gap: a spammed session is cheap, empty, and
+// cannot write anywhere but its own audit trail.
 sessions.post("/", zValidator("json", CreateSessionSchema), async (c) => {
+  const prisma = getPrisma(c);
   const body = c.req.valid("json");
+  const token = generateSessionToken();
+
   const session = await prisma.agentSession.create({
     data: {
       sessionMode: body.sessionMode,
@@ -55,14 +74,18 @@ sessions.post("/", zValidator("json", CreateSessionSchema), async (c) => {
       hygieneTrigger: body.hygieneTrigger,
       hygieneAfterN: body.hygieneAfterN,
       activeProjectIds: body.activeProjectIds,
+      tokenHash: hashSessionToken(token),
     },
     select: { id: true, startedAt: true, sessionMode: true },
   });
-  return c.json({ session }, 201);
+  return c.json({ session, token }, 201);
 });
 
-// GET /api/sessions — list sessions with snapshot summary
-sessions.get("/", async (c) => {
+// GET /api/sessions — list sessions with snapshot summary. Admin only: this
+// is an aggregate, cross-session view, which no single session's token can
+// authorize by construction.
+sessions.get("/", requireBearer, async (c) => {
+  const prisma = getPrisma(c);
   const limit = Number(c.req.query("limit") ?? 20);
   const offset = Number(c.req.query("offset") ?? 0);
 
@@ -87,13 +110,15 @@ sessions.get("/", async (c) => {
 });
 
 // GET /api/sessions/:id — full session with audit trail
-sessions.get("/:id", async (c) => {
+sessions.get("/:id", requireSessionOrAdmin, async (c) => {
+  const prisma = getPrisma(c);
   const session = await prisma.agentSession.findUnique({
     where: { id: c.req.param("id") },
     include: {
-      // Same tiebreaker as the verify replay, so a trail read here and a chain
-      // replayed there always agree on order.
-      auditTrail: { orderBy: [{ timestamp: "asc" }, { id: "asc" }] },
+      // Same ordering key as the verify replay (`seq`, not `timestamp` — see
+      // the AuditEntry.seq comment in schema.prisma), so a trail read here
+      // and a chain replayed there always agree on order.
+      auditTrail: { orderBy: { seq: "asc" } },
       stateSnapshots: { orderBy: { capturedAt: "desc" } },
     },
   });
@@ -110,11 +135,12 @@ sessions.get("/:id", async (c) => {
 // leaves a window where a session ends between the check and the write.
 sessions.post(
   "/:id/events",
+  requireSessionOrAdmin,
   zValidator("json", AppendEventSchema),
   async (c) => {
+    const prisma = getPrisma(c);
     const sessionId = c.req.param("id");
     const body = c.req.valid("json");
-    const ts = new Date();
 
     try {
       const entry = await prisma.$transaction(
@@ -128,13 +154,19 @@ sessions.post(
 
           const prev = await tx.auditEntry.findFirst({
             where: { sessionId },
-            // `timestamp` alone is not a total order: it is ms-precision and
-            // two sequential appends can land in the same tick, at which point
-            // Postgres may return either first. Picking the wrong predecessor
-            // silently forks the chain. `id` breaks the tie deterministically.
-            orderBy: [{ timestamp: "desc" }, { id: "desc" }],
+            // `seq` is the durable ordering key (see AuditEntry.seq in
+            // schema.prisma) — allocated at INSERT time inside this same
+            // transaction, so it always reflects true causal/commit order.
+            orderBy: { seq: "desc" },
             select: { integrityHash: true },
           });
+
+          // Sampled here, not before the transaction starts: this is hash
+          // preimage/display data only (ordering is `seq`'s job), but a
+          // timestamp sampled before a request even reached its transaction
+          // is a worse record of "when" than one sampled at the point of
+          // writing.
+          const ts = new Date();
 
           const integrityHash = chainHash(
             prev?.integrityHash ?? GENESIS_HASH,
@@ -183,7 +215,8 @@ sessions.post(
 // GET /api/sessions/:id/verify — replay the stored chain and report the first
 // divergence. This is the half the browser could never provide: verification
 // by a party other than the writer.
-sessions.get("/:id/verify", async (c) => {
+sessions.get("/:id/verify", requireSessionOrAdmin, async (c) => {
+  const prisma = getPrisma(c);
   const sessionId = c.req.param("id");
 
   const session = await prisma.agentSession.findUnique({
@@ -194,10 +227,11 @@ sessions.get("/:id/verify", async (c) => {
 
   const entries = await prisma.auditEntry.findMany({
     where: { sessionId },
-    // Must match the append-side tiebreaker exactly. Replaying in a different
+    // Must match the append-side ordering key exactly (`seq`, see the
+    // AuditEntry.seq comment in schema.prisma). Replaying in a different
     // order than the chain was built in reports `valid: false` on an intact
     // ledger — a false alarm from the one endpoint whose job is to be trusted.
-    orderBy: [{ timestamp: "asc" }, { id: "asc" }],
+    orderBy: { seq: "asc" },
   });
 
   return c.json({ sessionId, verification: verifyChain(entries, sessionId) });
@@ -206,8 +240,10 @@ sessions.get("/:id/verify", async (c) => {
 // PATCH /api/sessions/:id/end — close session and capture final StateSnapshot
 sessions.patch(
   "/:id/end",
+  requireSessionOrAdmin,
   zValidator("json", EndSessionSchema),
   async (c) => {
+    const prisma = getPrisma(c);
     const sessionId = c.req.param("id");
     const body = c.req.valid("json");
 
