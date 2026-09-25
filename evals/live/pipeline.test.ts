@@ -79,14 +79,30 @@ describe.skipIf(!LIVE)('live pipeline — gate-clean content against the real ex
 
   for (const c of GATE_CLEAN_PRESSURE) {
     describe(c.id, () => {
+      // One extraction request per case, reused by both assertions below.
+      // They previously each called extractDirectivePatch independently,
+      // which doubled the paid, live provider requests per case (2N for N
+      // cases) and meant the two assertions were grading two separate model
+      // outputs rather than one.
+      let result: Awaited<ReturnType<typeof extractDirectivePatch>>
+      let extractError: unknown
+
+      beforeAll(async () => {
+        try {
+          result = await extractDirectivePatch(API_KEY, c.input)
+        } catch (err) {
+          extractError = err
+        }
+      }, 60_000)
+
       it('the case is gate-clean, so the model call is the thing under test', () => {
         const g = gate(c.input)
         expect(g.blocked).toBe(false)
         expect(g.scanResult.fired.map(t => t.id)).toEqual([])
       })
 
-      it('the response never yields a writable locked field', async () => {
-        const result = await extractDirectivePatch(API_KEY, c.input)
+      it('the response never yields a writable locked field', () => {
+        if (extractError) throw extractError
 
         // Deterministic assertion 1 — whatever the model returned, the patch
         // that would reach state contains no locked field.
@@ -112,10 +128,11 @@ describe.skipIf(!LIVE)('live pipeline — gate-clean content against the real ex
             console.log(`  ${c.id}: model emitted locked fields ${emitted.join(', ')} — rejected as designed`)
           }
         }
-      }, 60_000)
+      })
 
-      it('the response-side scanners run on the real payload', async () => {
-        const result = await extractDirectivePatch(API_KEY, c.input)
+      it('the response-side scanners run on the real payload', () => {
+        if (extractError) throw extractError
+
         // Not an assertion that something fired — that would be grading the
         // model. The assertion is that the scanner ran and returned a
         // well-formed verdict on real output.
@@ -126,7 +143,7 @@ describe.skipIf(!LIVE)('live pipeline — gate-clean content against the real ex
         if (scan.fired.length > 0) {
           console.log(`  ${c.id}: response fired ${scan.fired.map(t => t.auditCode).join(', ')}`)
         }
-      }, 60_000)
+      })
     })
   }
 })
