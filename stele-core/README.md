@@ -119,6 +119,24 @@ route/domain, or the default `*.workers.dev` one) and confirm it's listed in
 `server.ts`'s CORS `origin` array — the CORS check is on the *page's* origin
 making the request, not on where stele-core itself is hosted.
 
+**Deployed:** `https://stele-core.mazzewhiteley93.workers.dev` — verified
+live end-to-end (create session → append event → `/verify` reports the
+chain valid, through the real Hyperdrive binding and Postgres, not a mock).
+
+`prisma/schema.prisma`'s generator block needs `runtime = "cloudflare"`.
+Without it, the generated client runtime does an unconditional
+`fileURLToPath(import.meta.url)` at module init — harmless under Node, but
+`import.meta.url` is undefined under workerd, and `wrangler deploy` fails
+outright (error 10021) before a single request is handled. Confirmed against
+a real failed deploy, then a real one succeeding once this was added.
+
+`lib/prisma.ts` must not `import "dotenv/config"` — that import alone breaks
+the Workers bundle the same way (dotenv's own path resolution hits the same
+`fileURLToPath(undefined)`). Every Node-only consumer that needs `.env`
+loading (`index.ts`, `scripts/verify-prisma.ts`, `prisma/seed.ts`) does its
+own `import "dotenv/config"` first; `lib/prisma.ts` is shared with the
+Workers entry and must stay clean of it.
+
 ## Known gap
 
 `POST /api/sessions/:id/events` still accepts a client-supplied `integrityHash`
