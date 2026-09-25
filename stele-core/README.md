@@ -139,9 +139,15 @@ Workers entry and must stay clean of it.
 
 ## Known gap
 
-`POST /api/sessions/:id/events` still accepts a client-supplied `integrityHash`
-and persists it verbatim (`schemas.ts`, `routes/sessions.ts`). The browser owns
-`verifyChain()`; the server does not recompute. Until that changes, the durable
-ledger is only as trustworthy as the client that wrote it — the server should
-be recomputing the chain from `prevHash` inside the same transaction that
-appends the row.
+`POST /api/sessions/:id/events` computes `integrityHash` itself, from the
+previous entry's hash, inside the same transaction as the append
+(`routes/sessions.ts`, `chain.ts`). A client-supplied `integrityHash` is
+stripped by `AppendEventSchema` before it ever reaches that code — the server
+never accepts or persists a caller-provided hash. `GET
+/api/sessions/:id/verify` replays the stored chain independently and reports
+the first divergence, which is the check a client-owned hash could never
+provide: verification by a party other than the writer.
+
+The remaining gap is narrower than "the server trusts the client": it is that
+`/verify` has never run against a session with real, concurrent write
+traffic outside this repo's own tests.
