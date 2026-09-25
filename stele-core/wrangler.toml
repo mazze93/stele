@@ -9,7 +9,7 @@ compatibility_flags = ["nodejs_compat"]
 #   npx wrangler hyperdrive create stele-core-db --connection-string="<postgres-url>"
 [[hyperdrive]]
 binding = "HYPERDRIVE"
-id = "REPLACE_WITH_HYPERDRIVE_CONFIG_ID"
+id = "c24ad4985c424d669bac5bd9e30371ee"
 
 # API_SECRET is a secret, not a var — set with:
 #   npx wrangler secret put API_SECRET

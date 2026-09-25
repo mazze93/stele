@@ -5,6 +5,13 @@
 generator client {
   provider = "prisma-client"
   output   = "../generated/prisma"
+  // Without this, the generated client runtime does an unconditional
+  // `fileURLToPath(import.meta.url)` at module init — fine under Node,
+  // but import.meta.url is undefined under workerd, and that throws
+  // before a single request is handled. Confirmed against a real
+  // `wrangler deploy` failure (error 10021) before this was added, and a
+  // real deploy succeeding after.
+  runtime = "cloudflare"
 }
 
 datasource db {

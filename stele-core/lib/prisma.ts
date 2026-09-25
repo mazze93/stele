@@ -1,7 +1,16 @@
-import "dotenv/config";
 import type { Context } from "hono";
 import { PrismaClient } from "../generated/prisma/client.js";
 import { PrismaPg } from "@prisma/adapter-pg";
+
+// Deliberately NOT `import "dotenv/config"` here. This file is shared with
+// the Workers entry (src/worker.ts), and dotenv's own path resolution
+// (fileURLToPath(import.meta.url) internally) breaks the Workers bundle —
+// confirmed by a real failed deploy: "The 'path' argument must be of type
+// string or an instance of URL. Received undefined". Every Node-only
+// consumer that actually needs .env loading (index.ts, scripts/verify-prisma.ts,
+// prisma/seed.ts) already does its own `import "dotenv/config"` first;
+// duplicating it here served no consumer this file has and broke the one
+// that doesn't want it.
 
 type Env = {
   DATABASE_URL?: string;
