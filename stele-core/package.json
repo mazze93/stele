@@ -20,7 +20,7 @@
     "prisma": "^7.9.1",
     "tsx": "^4.22.4",
     "typescript": "^6.0.3",
-    "wrangler": "^4.139.0"
+    "wrangler": "^4.146.0"
   },
   "dependencies": {
     "@hono/node-server": "^2.0.12",
