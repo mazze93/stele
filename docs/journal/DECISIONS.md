@@ -812,3 +812,36 @@ Fixed at the cause rather than per-site: a `codeOf()` helper strips block and
 line comments once, and every source assertion now reads through it. A gate
 that can be satisfied by its own documentation is the failure this thread is
 about, one layer up.
+
+---
+
+## 2026-10-07 · Markup sinks are lint-gated; the gate is itself tested
+
+**Context.** A class-closure pass asked whether the srcdoc same-origin footgun
+(an unsandboxed `srcdoc` iframe inherits the parent origin) reaches the paste
+surface. It doesn't: there are zero `srcdoc`, `iframe`, `innerHTML`, or
+`dangerouslySetInnerHTML` sinks in source, and every pasted or model-derived
+value renders as JSX text. But that protection was incidental. Nothing stopped
+a future feature from adding a sink, and ADR-0004 puts the API key in the
+browser tier.
+
+**Decision.** `eslint/markup-sinks.js` forbids every HTML-parsing sink
+repo-wide, vendored ui/ included. A real need for markup becomes a reviewed
+change recorded here (sandboxed iframe without `allow-same-origin`, or a vetted
+sanitizer), never an inline disable.
+
+**Evidence, not assertion.** `evals/markup-sinks.test.ts` lints 23 fixtures
+through the committed config. Before merge it was mutation-tested six ways,
+and every mutation turned it red: gate unwired, a later block overriding the
+rules, the glob narrowed, an inline disable, a blanket disable, and a real
+sink planted (lint exit 1).
+
+**What the eval caught that review didn't.** The rule as first written, and
+never run, missed 10 of 14 sink shapes, `srcDoc` among them. `/^writeln?$/`
+silently fails to match `write` under the current esquery.
+`no-restricted-properties` prepends its own text to the message. Same lesson
+as 2026-09-19 one layer over: a gate that has only been read is not yet a gate.
+
+**Perimeter.** Not caught: runtime-computed sink names, aliased `document`,
+`DOMParser` output imported into the live DOM, and inline script in
+`site/public/*.html`, which isn't linted (zero sinks there by grep today).
