@@ -136,9 +136,10 @@ Grown since the v1.0.0 build groups (all post-date the sequencing above):
   `deploy/` is assembled at deploy time, never committed).
 - Tests — vitest suites in `src/lib/__tests__/` covering security, tripwires,
   integrity, audit. Run before any security-layer change.
-- `docs/adr/` — ADRs 0001–0003 (monotonic escalation, deterministic tripwires
-  over model judges, boolean-only secret detection) — the written rationale
-  behind the Architecture Constraints below.
+- `docs/adr/` — ADRs 0001–0006 (monotonic escalation, deterministic tripwires
+  over model judges, boolean-only secret detection, the extraction trust
+  boundary, ecosystem position, detection matching a fold) — the written
+  rationale behind the Architecture Constraints below.
 - `docs/superpowers/{plans,specs}/` — dated design docs from earlier build
   phases (Group 2 wiring, narrative export). Historical: they record what was
   intended at the time, not necessarily what shipped. Check source before
@@ -190,8 +191,8 @@ Package manager is **pnpm** (pnpm-lock.yaml — don't introduce npm/yarn lockfil
 pnpm dev           # vite dev server (localhost:5173)
 pnpm build         # tsc -b && vite build && mv dist/index.html → dist/bundle.html
 pnpm preview       # preview dist/ locally
-pnpm lint          # eslint
-pnpm test          # vitest run — src/lib/__tests__ (security, tripwires, integrity, audit)
+pnpm lint          # eslint — includes the markup-sink gate (eslint/markup-sinks.js)
+pnpm test          # vitest run — src/**/__tests__, evals/eval.test.ts, evals/markup-sinks.test.ts
 ```
 
 Single test file / single case:
@@ -204,18 +205,22 @@ npx vitest watch src/lib/__tests__/security.test.ts
 
 `stele-core/` is its own package (npm, `stele-core/package-lock.json`):
 `npm run dev` (tsx watch) / `npm start` from inside that directory. Its `npm
-test` is still the exit-1 placeholder — it has no suite of its own.
+test` runs the `node --test` suite in `stele-core/test/` (chain encoding, the
+`/api/*` auth perimeter, schemas, session tokens) — no database required.
 
 ## CI
 
-`.github/workflows/typecheck.yml` runs on every push and pull request: pnpm 10 /
-Node 24, `pnpm install --frozen-lockfile`, then `npx tsc --noEmit` **and**
-`pnpm test`. A red suite blocks the same way a type error does — run both
-locally before touching the security layer rather than discovering it in CI.
+`.github/workflows/typecheck.yml` runs on every push and pull request, in two
+jobs. The app job: pnpm 10 / Node 24, `pnpm install --frozen-lockfile`, then
+`npx tsc -b --noEmit`, `pnpm lint`, and `pnpm test`. Use `-b`: the root
+tsconfig is a solution file, so plain `tsc --noEmit` checks zero files and
+exits 0. The `stele-core` job: `npm ci`, `prisma generate`, `tsc --noEmit`,
+`npm test`. Any red step blocks — run all three app checks locally before
+touching the security layer rather than discovering it in CI.
 
-Also live: `codeql.yml` (code scanning), `release.yml`, and `claude.yml` /
-`claude-code-review.yml` (skips Dependabot PRs). Every action is SHA-pinned —
-keep it that way when editing a workflow.
+Also live: `codeql.yml` (code scanning, `security-extended`), `release.yml`,
+and `claude.yml`. Every action is SHA-pinned — keep it that way when editing a
+workflow.
 
 ---
 
@@ -231,6 +236,14 @@ keep it that way when editing a workflow.
 - CSS vars by name in all component code. Never hardcode hex values.
 - `customAppend` cannot be written by any automated extraction. KAPU-003 fires
   if a patch attempts it. This is a hard stop, not a warning.
+- Pasted, extracted, and model-derived content renders as text, never markup.
+  No `innerHTML` / `outerHTML` / `insertAdjacentHTML` / `document.write` /
+  `dangerouslySetInnerHTML` / `srcdoc` anywhere in source — `pnpm lint` fails
+  on them (`eslint/markup-sinks.js`) and `evals/markup-sinks.test.ts` proves
+  the gate still fires. The API key lives in the browser tier (ADR-0004), so a
+  sink is key exposure, not a cosmetic bug. A real need for markup is a
+  reviewed design change recorded in `docs/journal/DECISIONS.md`, never an
+  inline rule suppression (the eval fails on those too).
 
 ---
 

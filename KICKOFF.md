@@ -1,5 +1,10 @@
 # STELE — Handoff Kickoff
 
+> **Historical handoff, kept as written.** This document predates Group 2
+> wiring. Groups 1–5 have since shipped (v1.0.0) and the paste surface it
+> calls "not yet built" is live. For current state, read `CLAUDE.md`; for the
+> live attack surface, read `SECURITY.md`.
+
 **Tool:** STELE — egregore compiler and integrity telemetry  
 **Output of this tool:** the egregore — a compiled Claude directive that governs session behavior  
 **Operator:** daedalus · MBP M3 ARM64 · zsh · /opt/homebrew
