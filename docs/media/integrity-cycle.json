@@ -1,0 +1,36 @@
+{
+  "kind": "editorial-walkthrough-followed-by-recorded-application",
+  "walkthroughSources": {
+    "site/public/integrity-story.css": "dd26dd032b3431d61ca43a88fd9d968f6af43480476a289e62868ec515a0504d",
+    "site/public/integrity-story.js": "39e80161a39f9b4ce041a3fb8c01fa83f8b2d1b8bc3501b60b4c54c9e463385c"
+  },
+  "heroMarkupSha256": "b974b6a2e414af3580670df67dfc630c3b6885fb41f4fdbef70c4e4608c5eff4",
+  "walkthroughCaptureSeconds": 21.657,
+  "encodedWalkthroughFrames": 521,
+  "framesPerSecond": 24,
+  "applicationCaptureSeconds": 7.989,
+  "encodedApplicationFrames": 192,
+  "encodedTotalFrames": 713,
+  "encodedTotalSeconds": 29.708333333333332,
+  "applicationTheme": "vellum-smoke",
+  "applicationCaptureEnvironment": "local production build; durable mirror disabled",
+  "modelKey": "non-credential placeholder",
+  "networkRequestsDuringGateAndLockout": 0,
+  "applicationEndsIn": "EPOCH\u00c9",
+  "localAuditEntries": 3,
+  "tobiraFired": [
+    "KAPU-001"
+  ],
+  "examplesAreIndependent": true,
+  "detectorContract": "node site/check-story.mjs",
+  "applicationSourceSha256": {
+    "src/App.tsx": "c1143b3f5e7a3dbf962308f0b6ac48f817abf7d5ce0d97445bbf206dae953014",
+    "src/App.css": "99fef52424dcc0a88ee4898984d6ab9f1af404846ae7ae6ce0308e233a9bf596",
+    "src/components/EpocheLockout.tsx": "d1e5cb26f5b2df2211a330c861c9cb78c1a55ec906fe634318a0ab21c48bcf5f",
+    "src/lib/integrity.ts": "6e4343a77d6dd7acf9d87c1d60793fdfee3bd6669a6350d100f3ed3ea13f958d",
+    "src/lib/security.ts": "fee9b11dd682f7426d37c10ae9ab4f7bb5fa67c37e8a1aeddb8a23719e62f9dd",
+    "src/lib/tripwires.ts": "c2f45e9a7feb3111364cb8b59238b04dde6be50c712a008b3d96b42fc463480a",
+    "src/data/themes.ts": "c846d19fe521145500a14ee136ded2fa26f000475534a8a752eb30ad3e65a40e"
+  },
+  "sourceNote": "The shipped component adds heading focus after the capture; visible UI and gate behavior are unchanged."
+}

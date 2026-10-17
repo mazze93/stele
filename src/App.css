@@ -17,3 +17,24 @@ textarea,select,input{font-family:inherit;outline:none}
 textarea:focus,select:focus,input:focus{border-color:var(--teal)!important;box-shadow:0 0 0 1px var(--teal)}
 button:hover{opacity:0.88}
 button:disabled{opacity:0.3!important;cursor:not-allowed!important}
+
+/* EPOCHÉ has one deliberate exit. Use a consistent inscription across themes. */
+:root{--suspension-ground:#1c1a17;--suspension-ink:#f6efe2;--suspension-signal:#db7c63;--suspension-line:#746551;}
+.epoche-lockout{height:100dvh;overflow-y:auto;background:var(--suspension-ground);color:var(--suspension-ink);
+  display:grid;align-items:center;padding:clamp(24px,5vw,64px);}
+.epoche-inscription{width:100%;max-width:740px;margin:auto;border-top:3px solid var(--suspension-signal);padding-top:24px;}
+.epoche-kicker{font:11px/1.7 var(--mono-font);letter-spacing:.14em;color:var(--suspension-signal);}
+.epoche-lockout h1{font-family:var(--heading-font);font-size:clamp(52px,8vw,92px);font-weight:500;letter-spacing:.08em;line-height:1.12;margin:12px 0;}
+.epoche-verdict{font-family:var(--heading-font);font-size:clamp(26px,3.7vw,38px);line-height:1.2;margin-bottom:18px;}
+.epoche-reason,.epoche-recovery{font:14px/1.9 var(--mono-font);max-width:68ch;}
+.epoche-observations{margin:24px 0;border-block:1px solid var(--suspension-line);padding:18px 0;}
+.epoche-observations h2{font:11px/1.8 var(--mono-font);letter-spacing:.1em;color:var(--suspension-signal);text-transform:uppercase;margin-bottom:10px;}
+.epoche-observations ul{list-style:none;display:grid;gap:10px;}
+.epoche-observations li{font:13px/1.8 var(--mono-font);display:flex;gap:14px;align-items:baseline;}
+.epoche-observations b{color:var(--suspension-signal);font-weight:500;flex-shrink:0;}
+.epoche-capabilities{font:11px/1.9 var(--mono-font);color:var(--suspension-signal);margin-bottom:18px;}
+.epoche-reset{display:block;background:transparent;border:1px solid var(--suspension-signal);color:var(--suspension-ink);
+  min-height:48px;padding:14px 20px;font:12px/1.7 var(--mono-font);margin:24px 0;cursor:pointer;touch-action:manipulation;}
+.epoche-reset:focus-visible{outline:3px solid var(--suspension-ink);outline-offset:5px;}
+.epoche-receipt{font:10px/1.8 var(--mono-font);overflow-wrap:anywhere;}
+@media(max-width:540px){.epoche-reason,.epoche-recovery{font-size:12px;}.epoche-observations li{display:block;font-size:12px;}.epoche-observations b{display:block;}.epoche-reset{width:100%;}}

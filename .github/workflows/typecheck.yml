@@ -21,6 +21,8 @@ jobs:
       - run: npx tsc -b --noEmit
       - run: pnpm lint
       - run: pnpm test
+      - name: Public integrity examples match the production gate
+        run: node site/check-story.mjs
 
   # stele-core is a separate package with its own lockfile (npm, not pnpm) and
   # was not covered by CI at all — it reached main with live type errors once

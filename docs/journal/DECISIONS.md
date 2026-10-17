@@ -868,3 +868,30 @@ as 2026-09-19 one layer over: a gate that has only been read is not yet a gate.
 - Rollback: revert these Git revisions and restore the preflight Worker/Pages
   versions. No migration, seed, reset, Access change, or credential replacement.
   A remaining unpatched build-only braces advisory is recorded, not suppressed.
+
+## 2026-10-16 — EPOCHÉ as the public hero moment
+
+- Lead with “When control is in doubt, stop.” Explain the pasted-text threat
+  and the reason for suspension before introducing module terminology.
+- Replace the illustrative Anchor terminal with an explicitly editorial
+  four-state walkthrough. Keep the existing limestone/basalt visual system.
+- Check public examples against the real gate and capability table in CI.
+  Show independent examples, direct escalation, and WABI's extraction limit;
+  never imply a required progression through increasingly severe inputs.
+- End the guided recording at actual EPOCHÉ lockout. Keep deliberate recovery
+  in a separate original recording. No automatic restoration or continuation.
+- Keep the model's philosophical duty distinct from the product guarantee:
+  this is deterministic pattern detection and a local lockout, not proof of
+  model self-awareness or complete prevention of hostile instructions.
+- Rollback is the prior Pages deployment 73ecfdd0 plus a Git revert. This
+  presentation change requires no Worker deployment or data mutation.
+- Final-frame review found the real lockout's small translucent text obscured
+  its purpose. Extract its presentation into EpocheLockout, with readable
+  contrast, the actual TOBIRA reason, suspended capabilities, and one reset
+  button. Preserve escalation, audit ordering, and reset behavior. Focus its
+  heading on entry. The suspension palette stays consistent across themes.
+- Use Vellum & Smoke in the new application segment so the change from a
+  working parchment interface to a basalt suspension is visible. Preserve
+  original clips. A local production build recorded the real gate interaction
+  with no network requests during the transition; deployed behavior is checked
+  separately. The capture is not represented as production telemetry.

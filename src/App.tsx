@@ -1,9 +1,9 @@
 import { useState, useEffect, useRef } from 'react'
 import type { DirectiveState } from '@/lib/types'
 import type { IntegrityState } from '@/lib/integrity'
+import { INTEGRITY_STATES } from '@/lib/integrity'
 import type { ThemeId } from '@/data/themes'
 import { buildDefaultState, applySessionPreset } from '@/data/defaults'
-import { INTEGRITY_STATES } from '@/lib/integrity'
 import { decideGateResult, recordGateResult } from '@/lib/enforcement'
 import { createAuditQueue } from '@/lib/audit-queue'
 import type { AuditQueue } from '@/lib/audit-queue'
@@ -20,6 +20,7 @@ import { useTheme } from '@/hooks/useTheme'
 import { LeftRail } from '@/components/LeftRail'
 import { LeverPanel } from '@/components/LeverPanel'
 import { OutputPanel } from '@/components/OutputPanel'
+import { EpocheLockout } from '@/components/EpocheLockout'
 import { MobileConfig } from '@/components/MobileConfig'
 import './App.css'
 
@@ -177,32 +178,8 @@ export default function App() {
       TOBIRA_REGISTRY.find(t => t.id === id)
       ?? { auditCode: 'UNKNOWN', message: 'Unregistered integrity exception.' }
     )
-    return (
-      <div style={{ display:'flex', flexDirection:'column', height:'100dvh', background:integrity.colorDim, color:integrity.color, alignItems:'center', justifyContent:'center', padding:'40px', textAlign:'center', gap:'24px' }}>
-        <div style={{ fontSize:'48px', fontFamily:'serif' }}>{integrity.glyph}</div>
-        <div style={{ fontFamily:'var(--mono-font)', fontSize:'14px', letterSpacing:'0.1em' }}>EPOCHÉ</div>
-        <div style={{ fontFamily:'var(--mono-font)', fontSize:'11px', color:'rgba(200,80,128,0.8)', maxWidth:'480px', lineHeight:1.8 }}>
-          {integrity.description}<br /><br />
-          The egregore is suspended — not destroyed. ZANSHIN is recoverable.<br />
-          Only a deliberate reset restores ZANSHIN.
-        </div>
-        {firedTobira.length > 0 && (
-          <div style={{ fontFamily:'var(--mono-font)', fontSize:'9px', color:'rgba(200,80,128,0.7)', maxWidth:'480px', textAlign:'left', display:'flex', flexDirection:'column', gap:'4px', padding:'12px 16px', border:'1px solid rgba(200,80,128,0.3)', borderRadius:'4px', background:'rgba(200,80,128,0.06)', width:'100%' }}>
-            <div style={{ letterSpacing:'0.1em', marginBottom:'6px', color:'rgba(200,80,128,0.5)', fontSize:'8px' }}>TOBIRA FIRED THIS SESSION</div>
-            {firedTobira.map((t, i) => (
-              <div key={i}>[{t.auditCode}] {t.message}</div>
-            ))}
-          </div>
-        )}
-        <button onClick={handleReset}
-          style={{ padding:'12px 32px', background:'transparent', border:`1px solid ${integrity.color}`, borderRadius:'4px', cursor:'pointer', fontFamily:'var(--mono-font)', fontSize:'12px', color:integrity.color, letterSpacing:'0.1em', touchAction:'manipulation' }}>
-          RESET — restore ZANSHIN
-        </button>
-        <div style={{ fontFamily:'var(--mono-font)', fontSize:'9px', color:'rgba(200,80,128,0.4)', marginTop:'8px' }}>
-          session: {state.sessionId} · {state.firedTobiraIds.length} TOBIRA fired · {auditTrail.entries.length} audit entries
-        </div>
-      </div>
-    )
+    return <EpocheLockout firedTobira={firedTobira} sessionId={state.sessionId}
+      auditCount={auditTrail.entries.length} onReset={handleReset} />
   }
 
   return (

@@ -8,8 +8,24 @@
     "sha256": "ded1b1f4d74de8f42c2a824ebed5aa79380da5546675594e4c5e8e90bfed0cfa"
   },
   "compile-and-audit.vtt": {
-    "bytes": 402,
-    "sha256": "19a7ac88a977e36b53c2330794fc9c697103f8b2dcdb1545cde4dfb68fed1619"
+    "bytes": 453,
+    "sha256": "2ed834137e5d50ef4b5466f2f2525e9a260ba062b51ddedd5db05d5a3aeed644"
+  },
+  "epoche-vellum-smoke.mp4": {
+    "bytes": 149170,
+    "sha256": "0628310a5f036e7c8cf6b6af1feb23269d41b9cddec7014d031f5a480a69f508"
+  },
+  "integrity-cycle-poster.jpg": {
+    "bytes": 128148,
+    "sha256": "80390e610d326367a5779ddcd47ed11a0d37ed20da4ec818fc173cb72e8230f9"
+  },
+  "integrity-cycle.mp4": {
+    "bytes": 684543,
+    "sha256": "70b01fd39d85b9c51aac4be7c4e5de4df8fafa093e5777e16055ee1063477314"
+  },
+  "integrity-cycle.vtt": {
+    "bytes": 911,
+    "sha256": "d788ae023cc53ba38b7e9cafbc629d427047f03c4ede5c719b4194f6ef8a3372"
   },
   "unicode-gate-poster.jpg": {
     "bytes": 32287,
@@ -24,7 +40,7 @@
     "sha256": "83ce9e518efb8c842c5022b80f55c9bdd22ad97e7671554fb88b1fa06b8a5d8e"
   },
   "unicode-gate.vtt": {
-    "bytes": 325,
-    "sha256": "fea61047acbc414189d667f642bf7ba61c4934d9c34935afb881f6aa2a69bb7f"
+    "bytes": 496,
+    "sha256": "5581c79312d8143c789836e62a6d0acebeaca9f3f76804b5e58ca40101f73873"
   }
 }

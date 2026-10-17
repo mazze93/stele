@@ -24,6 +24,19 @@ The stopping is not a failure mode. It is the highest-value action available.
 
 ## Recorded demonstrations
 
+[![EPOCHÉ: continuing would trust the wrong instruction](https://stele.mazzeleczzare.com/media/integrity-cycle-poster.jpg)](https://stele.mazzeleczzare.com/media/integrity-cycle.mp4)
+
+**When control is in doubt, stop.** [Watch all four integrity states explained](https://stele.mazzeleczzare.com/#demos),
+ending in the actual application lockout. Each state explains what was observed,
+why the system responds, and which actions remain available. The walkthrough uses
+independent examples: a severe signal can move directly to EPOCHÉ. WABI already
+suspends extraction; EPOCHÉ suspends the entire session. Continuing requires a
+deliberate reset to a new session, with no “continue anyway” in the suspended one.
+
+The first 22 seconds are an editorial explanation; the final seconds show the
+actual application in Vellum & Smoke giving way to the EPOCHÉ lockout. The underlying checks are verified against the production
+gate and capability table with `node site/check-story.mjs`.
+
 [![A Unicode-mutated paste triggers KAPU-001, EPOCHÉ, and deliberate reset](https://stele.mazzeleczzare.com/media/unicode-gate.gif)](https://stele.mazzeleczzare.com/#demos)
 
 A real browser capture using synthetic input: U+200B inside an override keyword
