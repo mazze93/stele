@@ -33,3 +33,46 @@ sizes and hashes are recorded in `manifest.json`.
 
 The recordings demonstrate bounded product behavior. The threat-model paper
 and production receipts describe the stronger checks and remaining limitations.
+
+## EPOCHÉ hero — October 16, 2026
+
+`integrity-cycle.mp4` adds a guided explanation of all four integrity states,
+followed by an eight-second recording of the updated application in Vellum &
+Smoke (`epoche-vellum-smoke.mp4`). The final
+frame remains in application lockout; the deliberate reset stays in the original
+recording. This cut has no audio, automatic playback, or repeat loop.
+
+The application segment records a local production build with the durable
+mirror disabled, a non-credential key placeholder, and a real gate submission.
+The network trace observed zero requests during the gate and lockout; no model
+response was simulated. The lockout records one TOBIRA and three local audit
+entries. It is the actual application UI, not an editorial reconstruction.
+
+The first approximately 22 seconds record the editorial website walkthrough,
+not four application sessions. The page labels the examples as independent.
+They are not a mandatory sequence of inputs: a severe signal can move straight
+to EPOCHÉ, and WABI already prevents another extraction in that session.
+`node site/check-story.mjs` checks each quoted input, exact audit code, blocked
+result, and four advertised capabilities against the production gate and
+integrity module. CI runs this contract alongside the application checks.
+
+The page initially shows EPOCHÉ and explains why suspension is appropriate.
+Playback is deliberate, progresses once through ZANSHIN, UNHEIMLICH, WABI,
+and EPOCHÉ, and stays there. State buttons allow manual exploration. Reduced
+motion removes timed playback; without JavaScript, all four explanations remain
+readable. No system override or simulated model response was added to the app.
+
+The final walkthrough capture uses the same screencast/encoder pipeline as the
+original recordings. Raw frames and timestamps remain in persistent ignored
+`.release/recordings/integrity-cycle-final/` and `epoche-vellum-smoke/`.
+`integrity-cycle.json` records
+source hashes and the boundary between explanation and application footage.
+The original application footage and raw captures are preserved. Captions for
+both original recordings now explain the purpose before introducing terminology.
+The new poster is a static README preview linking to deliberate video playback.
+
+Reviewed at 1280×934 and 390×844, including touch target dimensions, keyboard
+selection, reduced-motion manual mode, and absence of horizontal overflow.
+These are implementation checks, not measured audience comprehension or a
+usability study. The three-to-six-second comprehension target still needs a
+first-time-viewer test.

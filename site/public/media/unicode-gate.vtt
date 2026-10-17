@@ -1,13 +1,16 @@
 WEBVTT
 
 00:00.000 --> 00:01.200
-Project context enters as data.
+Pasted text is about to be checked before it reaches the AI.
 
 00:01.200 --> 00:03.600
-A synthetic override hides U+200B inside “ignore”.
+This example tries to replace the operator’s rules.
+An invisible character splits the word “ignore”.
 
 00:03.600 --> 00:07.500
-KAPU-001 fires. EPOCHÉ suspends extraction and records the event.
+STELE detects the override and suspends the session: EPOCHÉ.
+No model call is made for this attempt.
 
 00:07.500 --> 00:09.900
-A deliberate reset restores ZANSHIN and clears the session key.
+The operator deliberately resets to a new ZANSHIN session.
+There is no “continue anyway” in the suspended session.
