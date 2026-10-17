@@ -1,0 +1,16 @@
+{
+  "health": "ok",
+  "version": "b33fbfc9-f78a-4b49-9def-bea019fb21b0",
+  "admin_paths_unauthenticated": 401,
+  "cross_session_token": 401,
+  "concurrent_appends": 12,
+  "serialization_retries": 9,
+  "verification": {
+    "valid": true,
+    "entries": 12
+  },
+  "malformed_boolean": 400,
+  "closed_session_append": 409,
+  "synthetic_sessions_closed": 2,
+  "scope": "synthetic ledger traffic; no existing sessions read or modified"
+}

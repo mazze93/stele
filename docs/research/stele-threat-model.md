@@ -222,6 +222,12 @@ reported as structural evidence, not browser-level execution proof.
 Apatea's original monotonicity, determinism, and extent checks permit a constant
 high-risk assessor to pass. A function that always emits the same score cannot
 be lowered by transformations; that establishes nothing about discrimination.
+A direct replay against the original runner accepted constant-zero (759
+checks), constant-high (1,476 checks), empty atoms (zero checks), and an unknown
+transformation selection (42 baseline checks and zero variants). All four are
+rejected after repair; the before/after receipt is `verifier-adequacy.json`.
+This is a four-mutant instrument check, not a full ablation experiment.
+
 The repaired runner requires target-owned positive and benign controls, checks
 assessment shape and finite scores in range, and refuses empty atom corpora,
 unknown transformations, empty selections, and zero-variant searches. CLI exit
@@ -267,6 +273,14 @@ not include the additional target-control calls. The release's production
 verification is recorded separately because a unit test cannot certify a
 Cloudflare binding, a database schema, or public route reachability.
 
+A hosted-browser replay submitted a synthetic override phrase with U+200B
+inside its keyword. The UI entered EPOCHÉ with KAPU-001 and three local audit
+entries. Network observation recorded three successful event submissions and
+zero Anthropic requests during the monitored gate/reset flow. Reset restored
+ZANSHIN and cleared the synthetic key. This supports the actual UI wiring for
+that case; it does not establish all possible render schedules or network
+conditions. See `browser-production.json` and `production-epoche.png`.
+
 ### 6.1 A valid chain can still omit evidence
 
 Review of the browser adapter found that it forwarded only the last event of a
@@ -293,9 +307,14 @@ keeps issued tokens in memory. An initial pre-release probe found HTTP 500 on
 the deployed append path despite passing local tests. The adapter mapped a
 serialization conflict to `DriverAdapterError.cause.kind = TransactionWriteConflict`
 before Prisma's P2034 normalization. The classifier now recognizes that exact
-shape, with regressions refusing lookalike messages and unrelated errors. The final deployment
-receipt, when available, is the authority for runtime closure; this draft does
-not infer it from a successful bundle or deployment command.
+shape, with regressions refusing lookalike messages and unrelated errors. The deployed repair passed the same twelve-append probe with nine bounded
+serialization retries: replay returned `valid: true, entries: 12`. Administrative
+and cross-session requests were denied with 401, a malformed boolean was
+rejected with 400, and append after closure returned 409. Both successful-probe
+sessions were closed. See `release-evidence/core-production.json` for the
+version identifier and status-only receipt. Two earlier failed probe runs each
+created two synthetic sessions before cleanup was added; their transient tokens
+were not retained. This residual is recorded rather than deleting ledger data.
 
 ## 7. Residual threats and validity limits
 

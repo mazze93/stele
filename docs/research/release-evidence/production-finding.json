@@ -12,5 +12,6 @@
     "message-only lookalike rejected"
   ],
   "pre_release_probe_limit": "Two failed probe runs each created two synthetic sessions before cleanup was added; their transient tokens were not retained. No existing session was modified.",
-  "status": "awaiting deployed replay"
+  "status": "deployed replay passed",
+  "verification_receipt": "core-production.json"
 }

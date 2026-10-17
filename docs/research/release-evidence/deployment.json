@@ -1,0 +1,13 @@
+{
+  "stele_revision": "c508c2768c3e2a5fac8176eb09d5808bb8861944",
+  "pages_url": "https://6dd769cf.stele.pages.dev",
+  "production_url": "https://stele.mazzeleczzare.com/app/",
+  "core_version": "b33fbfc9-f78a-4b49-9def-bea019fb21b0",
+  "core_origin": "https://stele-core.mazzewhiteley93.workers.dev",
+  "aletheia_merge": "7e837070a0984c8fafde88cd8a91527f892045c7",
+  "apatea_merge": "775b0ad3e60ad3cf4338c22702c78673dc1f4f79",
+  "hosted_bundle_sha256": "74b3a28af538f396e55549a3450d8347a7b5a8d4a8cb4ca36f7a74ac73b7b86c",
+  "pages_provenance_correction": "Initial upload used an incorrect commit metadata value; immediately superseded by the same verified bytes with the exact Git revision. Final active deployment above has the corrected revision.",
+  "database_changes": "none",
+  "secrets_or_access_changes": "none"
+}

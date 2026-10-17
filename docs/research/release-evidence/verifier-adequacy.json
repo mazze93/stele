@@ -1,0 +1,50 @@
+{
+  "before": [
+    {
+      "mutant": "constant-zero",
+      "outcome": "accepted",
+      "checks": 759,
+      "variants": 717
+    },
+    {
+      "mutant": "constant-high",
+      "outcome": "accepted",
+      "checks": 1476,
+      "variants": 717
+    },
+    {
+      "mutant": "empty-atoms",
+      "outcome": "accepted",
+      "checks": 0,
+      "variants": 0
+    },
+    {
+      "mutant": "unknown-transformation",
+      "outcome": "accepted",
+      "checks": 42,
+      "variants": 0
+    }
+  ],
+  "after": [
+    {
+      "mutant": "constant-zero",
+      "outcome": "execution-error",
+      "exception": "ValueError"
+    },
+    {
+      "mutant": "constant-high",
+      "outcome": "execution-error",
+      "exception": "ValueError"
+    },
+    {
+      "mutant": "empty-atoms",
+      "outcome": "execution-error",
+      "exception": "ValueError"
+    },
+    {
+      "mutant": "unknown-transformation",
+      "outcome": "execution-error",
+      "exception": "ValueError"
+    }
+  ]
+}

@@ -257,3 +257,23 @@ Research draft: `docs/research/stele-threat-model.md`; reproducibility protocol
 and evidence are alongside it. See production-finding.json for the live error
 that prevents treating local tests as deployment proof. Deployment and final
 runtime receipts are the next checkpoint; do not infer them from this entry.
+
+
+### 2026-10-16 — production proof captured
+
+Core version b33fbfc9-f78a-4b49-9def-bea019fb21b0: twelve concurrent appends,
+nine bounded serialization retries, twelve entries replayed valid. Admin and
+cross-session denials, malformed boolean, and post-close rejection all passed.
+No database or credential changes. See core-production.json and deployment.json.
+
+Hosted browser: U+200B override -> KAPU-001 -> EPOCHÉ, three local audit entries,
+three successful durable event submissions, zero model requests in the monitored
+flow. Reset restores ZANSHIN and clears the synthetic key. Screenshot and
+sanitized network receipt are in release-evidence. Four earlier synthetic probe
+sessions were left open before cleanup was added; transient tokens were not
+retained. Existing sessions were not read or modified.
+
+Gate PR aletheia#23 and runner PR apatea#2 are merged after their checks passed.
+STELE release PR #102 carries code, reproducible evidence, and the research draft.
+One unpatched build-only braces advisory remains; other documented lexical,
+credential-tier, transport, and external-anchor limits remain explicit.
