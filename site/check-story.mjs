@@ -14,8 +14,11 @@ try {
   const capabilities = ['allowsExtraction', 'allowsApiCalls', 'allowsStateWrites', 'allowsPatchApplication']
   const receipts = []
   for (const [, state, content] of scenes) {
+    // Decode only the one authored editorial marker. This is not a sanitizer;
+    // unexpected markup is a contract error, never stripped and accepted.
     const input = content.match(/<blockquote>([\s\S]*?)<\/blockquote>/)[1]
-      .replace(/<[^>]*>/g, '').replace('[U+200B]', '\u200b')
+      .replace('<mark>[U+200B]</mark>', '\u200b')
+    assert(!input.includes('<') && !input.includes('>'), 'Unexpected markup in public gate example')
     const result = gate(input)
     assert.equal(result.recommendedTransition ?? 'ZANSHIN', state, input)
     const code = content.match(/<code>([^<]+)<\/code>/)[1]
