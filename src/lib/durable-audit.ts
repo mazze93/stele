@@ -19,7 +19,8 @@
 // with no backend configured is simply inert. See .env.example.
 
 import type { DirectiveState } from './types'
-import type { AuditAction, AuditEntry } from './audit'
+import type { AuditAction, AuditEntry, AuditTrail } from './audit'
+import type { AuditQueue } from './audit-queue'
 import type { IntegrityState } from './integrity'
 import type { Verbosity, HygieneTrigger } from './types'
 
@@ -59,6 +60,7 @@ export async function createDurableSession(state: DirectiveState): Promise<Durab
   try {
     const res = await fetch(`${BASE_URL}/api/sessions`, {
       method: 'POST',
+      signal: AbortSignal.timeout(8000),
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         sessionMode: state.sessionMode,
@@ -82,6 +84,7 @@ export async function mirrorDurableEntry(session: DurableSession | null, entry: 
   try {
     await fetch(`${BASE_URL}/api/sessions/${session.id}/events`, {
       method: 'POST',
+      signal: AbortSignal.timeout(8000),
       headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session.token}` },
       body: JSON.stringify({
         action: ACTION_MAP[entry.action],
@@ -110,6 +113,7 @@ export async function endDurableSession(session: DurableSession | null, state: D
   try {
     await fetch(`${BASE_URL}/api/sessions/${session.id}/end`, {
       method: 'PATCH',
+      signal: AbortSignal.timeout(8000),
       headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session.token}` },
       body: JSON.stringify({
         integrityState: mapIntegrityState(state.integrityState as IntegrityState),
@@ -120,4 +124,42 @@ export async function endDurableSession(session: DurableSession | null, state: D
   } catch {
     // Best-effort, same as above.
   }
+}
+
+/** One mirror per local session; its token and ordered tail never cross reset. */
+export function createDurableMirror(state: DirectiveState) {
+  const session = createDurableSession(state)
+  let tail: Promise<void> = Promise.resolve()
+  let submitted = 0
+  let ended = false
+  return {
+    enqueue(trail: AuditTrail): void {
+      if (ended || trail.sessionId !== state.sessionId) return
+      const entries = trail.entries.slice(submitted)
+      submitted = trail.entries.length
+      tail = tail.then(async () => {
+        const durable = await session
+        for (const entry of entries) await mirrorDurableEntry(durable, entry)
+      })
+    },
+    end(finalState: DirectiveState): Promise<void> {
+      if (!ended) {
+        ended = true
+        tail = tail.then(async () => endDurableSession(await session, finalState))
+      }
+      return tail
+    },
+    drain: () => tail,
+  }
+}
+export type DurableMirror = ReturnType<typeof createDurableMirror>
+
+/** Flush already-queued local evidence even when reset supersedes its UI. */
+export async function closeDurableMirror(
+  queue: AuditQueue, mirror: DurableMirror | null, state: DirectiveState,
+): Promise<void> {
+  if (!mirror) return
+  await queue.drain()
+  mirror.enqueue(queue.current())
+  await mirror.end(state)
 }

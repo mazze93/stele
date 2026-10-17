@@ -1,0 +1,21 @@
+{
+  "ts": "2026-10-17T00:57:44+00:00",
+  "target": "stele-production-gate",
+  "origin": "web_search",
+  "atoms": 5,
+  "variants": 190,
+  "checks": 390,
+  "findings": 0,
+  "perimeter": {
+    "tried": {
+      "unicode_adjacency": 120,
+      "invisible": 60,
+      "case": 10
+    },
+    "held": {
+      "determinism": 5,
+      "extent_stability": 195,
+      "monotonicity": 190
+    }
+  }
+}

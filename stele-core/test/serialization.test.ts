@@ -60,3 +60,19 @@ describe("isSerializationFailure", () => {
     assert.equal(isSerializationFailure("P2034"), false);
   });
 });
+
+
+describe("interactive driver-adapter conflict", () => {
+  it("recognizes the live Hyperdrive transaction commit error before Prisma normalization", () => {
+    const err = Object.assign(new Error("TransactionWriteConflict"), {
+      name: "DriverAdapterError", cause: { kind: "TransactionWriteConflict" },
+    });
+    assert.equal(isSerializationFailure(err), true);
+  });
+  it("does not retry unrelated adapter errors or a lookalike message", () => {
+    assert.equal(isSerializationFailure(Object.assign(new Error("TransactionWriteConflict"), {
+      cause: { kind: "UniqueConstraintViolation" },
+    })), false);
+    assert.equal(isSerializationFailure(new Error("TransactionWriteConflict")), false);
+  });
+});

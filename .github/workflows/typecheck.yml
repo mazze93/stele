@@ -53,3 +53,45 @@ jobs:
       # perimeter, the schema invariants, and the write-conflict classifier,
       # all of which are pure or exercised through Hono's request handler.
       - run: npm test
+
+  gate-runner-pairing:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+      - uses: pnpm/action-setup@ea17c68df8912ef543352723c149a84f56e3d413
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020
+        with:
+          node-version: 24
+          cache: pnpm
+      - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1
+        with:
+          python-version: '3.13'
+      - run: pnpm install --frozen-lockfile --ignore-scripts
+      - name: Resolve pinned gate and runner
+        id: pins
+        run: |
+          python3 - <<'PY_PINS'
+          import json, os
+          pins = json.load(open('evals/pairing-lock.json'))
+          with open(os.environ['GITHUB_OUTPUT'], 'a') as output:
+              for name in ('aletheia', 'apatea'):
+                  output.write(f"{name}={pins[name]['revision']}\n")
+          PY_PINS
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          repository: mazze93/apatea
+          ref: ${{ steps.pins.outputs.apatea }}
+          path: .closure/apatea
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          repository: mazze93/aletheia
+          ref: ${{ steps.pins.outputs.aletheia }}
+          path: .closure/aletheia
+      - run: PYTHONPATH=src:. python3 -m unittest discover -v
+        working-directory: .closure/apatea
+      - run: PYTHONPATH=src:. python3 -m unittest discover -v
+        working-directory: .closure/aletheia
+      - name: Gate and runner agree under the declared perimeter
+        run: |
+          PYTHONPATH=.closure/apatea/src:.closure/apatea ALETHEIA_HOME="$PWD/.closure/aletheia" python3 -m apatea.cli --target aletheia
+          python3 evals/pairing.py --apatea .closure/apatea

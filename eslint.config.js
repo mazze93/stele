@@ -15,7 +15,7 @@ import { markupSinkGate } from './eslint/markup-sinks.js'
 const VENDORED = ['src/components/ui/**', 'src/hooks/use-toast.ts']
 
 export default defineConfig([
-  globalIgnores(['dist', 'stele-core/generated', 'stele-core/dist']),
+  globalIgnores(['dist', 'stele-core/generated', 'stele-core/dist', '.worktrees/**', '.remember/**', '.release/**', '.closure/**']),
   {
     files: ['**/*.{ts,tsx}'],
     extends: [

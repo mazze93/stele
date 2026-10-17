@@ -211,7 +211,7 @@ test` runs the `node --test` suite in `stele-core/test/` (chain encoding, the
 ## CI
 
 `.github/workflows/typecheck.yml` runs on every push and pull request, in two
-jobs. The app job: pnpm 10 / Node 24, `pnpm install --frozen-lockfile`, then
+jobs. The app job: pnpm 12 / Node 24, `pnpm install --frozen-lockfile`, then
 `npx tsc -b --noEmit`, `pnpm lint`, and `pnpm test`. Use `-b`: the root
 tsconfig is a solution file, so plain `tsc --noEmit` checks zero files and
 exits 0. The `stele-core` job: `npm ci`, `prisma generate`, `tsc --noEmit`,

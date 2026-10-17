@@ -9,12 +9,16 @@ Pages project (direct upload — not git-connected).
 Deploy:
 
 ```bash
-pnpm build                                   # app -> dist/bundle.html
-rm -rf site/deploy && mkdir -p site/deploy/app
-cp -r site/public/. site/deploy/             # landing at /
-cp dist/bundle.html site/deploy/app/index.html
-cp dist/favicon.svg dist/icons.svg site/deploy/app/
-npx wrangler pages deploy site/deploy --project-name=stele --branch=main
+zsh site/assemble.zsh
+npm exec --prefix stele-core --no -- wrangler pages deploy site/deploy --project-name=stele --branch=main --commit-hash="$(git rev-parse HEAD)"
 ```
 
 Routes: `/` landing (primary CTA → `/app/`), `/app/` the compiler.
+
+
+The root Wrangler output directory is `site/deploy`, matching this assembly.
+Hosted builds explicitly enable the public core origin. Plain `pnpm build`
+leaves the downloaded/offline bundle's mirror disabled unless configured.
+Deploy only a tested committed revision; inspect the active deployment and
+exercise the production app and core after upload. Worker rollback does not
+reverse database writes. Prior deployment IDs are recorded in release evidence.

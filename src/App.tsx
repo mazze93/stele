@@ -9,8 +9,8 @@ import { createAuditQueue } from '@/lib/audit-queue'
 import type { AuditQueue } from '@/lib/audit-queue'
 import { createAuditTrail, appendEntry } from '@/lib/audit'
 import type { AuditTrail, AuditAction, AuditExtras } from '@/lib/audit'
-import { createDurableSession, mirrorDurableEntry, endDurableSession } from '@/lib/durable-audit'
-import type { DurableSession } from '@/lib/durable-audit'
+import { createDurableMirror, closeDurableMirror } from '@/lib/durable-audit'
+import type { DurableMirror } from '@/lib/durable-audit'
 import type { GateResult } from '@/lib/security'
 import type { DirectiveStatePatch } from '@/lib/extraction-schema'
 import type { NarrativeFields } from '@/lib/extractor'
@@ -56,26 +56,17 @@ export default function App() {
   // trail, await, then write back will silently drop one another's entries —
   // and the surviving chain still verifies, so nothing downstream notices.
   const auditQueueRef    = useRef(createAuditQueue(session.audit))
-  // Durable mirror of this session in stele-core — null until (if ever) it's
-  // created, and permanently null when VITE_STELE_CORE_URL isn't configured.
-  // See lib/durable-audit.ts: every write through it is best-effort and never
-  // blocks or gates the local trail this ref sits beside.
-  const durableSessionRef = useRef<DurableSession | null>(null)
+  // Each local session owns its ordered durable mirror, including in-flight creation.
+  const durableMirrorRef = useRef<DurableMirror | null>(null)
   useTheme(state.themeId as ThemeId)
 
   useEffect(() => {
     if (sessionStarted.current) return    // StrictMode second-fire guard
     sessionStarted.current = true         // set before any state call or async boundary
     const queue = auditQueueRef.current
-    // Durable session creation is awaited before the first local append (not
-    // fire-and-forget like later writes) so the session-start entry — the one
-    // every replay depends on as its root — gets a real chance at being
-    // mirrored rather than racing a still-pending request. createDurableSession
-    // never throws and resolves near-instantly when unconfigured.
-    createDurableSession(session.state).then(durable => {
-      durableSessionRef.current = durable
-      queue.enqueue(trail => appendEntry(trail, 'session-start')).then(t => publish(queue, t))
-    })
+    durableMirrorRef.current = createDurableMirror(session.state)
+    // Local evidence never waits for network or session creation.
+    queue.enqueue(trail => appendEntry(trail, 'session-start')).then(t => publish(queue, t))
     // `session` comes from `useState(buildSession)` with no setter ever
     // called — stable for the component's lifetime, same as the
     // StrictMode guard above assumes. Listed for exhaustive-deps, not
@@ -94,8 +85,7 @@ export default function App() {
   function publish(queue: AuditQueue, trail: AuditTrail) {
     if (auditQueueRef.current !== queue) return
     setAuditTrail(trail)
-    const latest = trail.entries.at(-1)
-    if (latest) void mirrorDurableEntry(durableSessionRef.current, latest)
+    durableMirrorRef.current?.enqueue(trail)
   }
 
   function applyPreset(mode: string) { setState(prev => applySessionPreset(prev, mode)) }
@@ -163,21 +153,15 @@ export default function App() {
   }
 
   function handleReset() {
-    // Close out the durable mirror of the session being replaced, using the
-    // state as it stood right before reset — fire-and-forget, same as every
-    // other durable-audit call; reset must not wait on a network request.
-    void endDurableSession(durableSessionRef.current, state)
-
+    void closeDurableMirror(auditQueueRef.current, durableMirrorRef.current, state)
     const newState = buildDefaultState()
-    durableSessionRef.current = null
-    createDurableSession(newState).then(durable => {
-      durableSessionRef.current = durable
-    })
-
+    durableMirrorRef.current = createDurableMirror(newState)
     setState(newState)
     const freshTrail = createAuditTrail(newState.sessionId)
-    auditQueueRef.current = createAuditQueue(freshTrail)
+    const queue = createAuditQueue(freshTrail)
+    auditQueueRef.current = queue
     setAuditTrail(freshTrail)
+    queue.enqueue(trail => appendEntry(trail, 'session-start')).then(t => publish(queue, t))
     setApiKey('')
   }
 
@@ -200,7 +184,7 @@ export default function App() {
         <div style={{ fontFamily:'var(--mono-font)', fontSize:'11px', color:'rgba(200,80,128,0.8)', maxWidth:'480px', lineHeight:1.8 }}>
           {integrity.description}<br /><br />
           The egregore is suspended — not destroyed. ZANSHIN is recoverable.<br />
-          Only a deliberate reset restores clean state.
+          Only a deliberate reset restores ZANSHIN.
         </div>
         {firedTobira.length > 0 && (
           <div style={{ fontFamily:'var(--mono-font)', fontSize:'9px', color:'rgba(200,80,128,0.7)', maxWidth:'480px', textAlign:'left', display:'flex', flexDirection:'column', gap:'4px', padding:'12px 16px', border:'1px solid rgba(200,80,128,0.3)', borderRadius:'4px', background:'rgba(200,80,128,0.06)', width:'100%' }}>

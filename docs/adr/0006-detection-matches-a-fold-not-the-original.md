@@ -142,3 +142,15 @@ project's method exists to refuse.
 - **Model-level semantic paraphrase** — the ADR-0002 blind spot, unchanged.
 - **Encoded or extracted payload differentials** — base64, nested quoting,
   and content that only becomes instructions after a downstream transform.
+
+
+## Implementation clarification — 2026-10-16
+
+The statement above that the original is recorded and hash-chained is broader
+than the implementation. `AuditEntry` stores event metadata (TOBIRA identifiers,
+state transitions, field names, and a boolean APOCRYPHA indicator), not pasted
+content or a content digest. Original text remains the input for raw-view
+matching, raw-length admission, and any permitted API transmission. The local
+and core hash chains attest their own event sequences, not the original paste
+or model interpretation. The fold is a declared detection policy; these tests
+do not establish semantic equivalence to a model's perception.

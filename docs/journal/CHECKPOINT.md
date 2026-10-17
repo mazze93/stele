@@ -243,3 +243,17 @@ Each has a quarantine test that fails if it silently starts passing:
   a file that never existed in this repo.
 - Deploy shape: root `wrangler.toml` vs `site/README.md`. One is stale.
 - Ollama is gone; Muse Glimmer blocked past phase 2.
+
+
+## 2026-10-16 — release candidate in persistent isolation
+
+Working directory: `.worktrees/full-class-closure` beneath the original STELE
+checkout. Companion clones: `.worktrees/aletheia`, `.worktrees/apatea`.
+The original checkout and its operator-local AGENTS/.codex files are preserved.
+
+The candidate aligns upstream dependencies, markup-sink protections, pnpm 12,
+Pages assembly, core serialization handling, and a pinned gate/runner CI job.
+Research draft: `docs/research/stele-threat-model.md`; reproducibility protocol
+and evidence are alongside it. See production-finding.json for the live error
+that prevents treating local tests as deployment proof. Deployment and final
+runtime receipts are the next checkpoint; do not infer them from this entry.

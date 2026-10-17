@@ -1,0 +1,18 @@
+{
+  "date": "2026-10-16",
+  "stele_local": "0ed1711",
+  "stele_remote": "09d791dabfe48e9bd649e36077e54dce7894f89e",
+  "aletheia": "b6eaed308c8524cd71188c0968e64e1c9e11ec3f",
+  "apatea": "d2dd9f987d7c83fb511848aacd74036aa60906f6",
+  "worker_rollback": "0f3cf477-4aa6-49aa-bc1b-3ad3df28c41f",
+  "pages_rollback": "a82e99e1-e1c4-44af-95b3-ccd213cd5ad0",
+  "baseline_app_tests": 144,
+  "baseline_core_tests": 53,
+  "baseline_aletheia_tests": 44,
+  "runner_findings": {
+    "count": 2,
+    "cause": "case changes to shell commands are not meaning preserving"
+  },
+  "rollback": "Revert intended Git commits and restore recorded Pages/Worker deployment versions; no database changes planned.",
+  "source_checkout": "preserved; release work lives under ignored .worktrees"
+}

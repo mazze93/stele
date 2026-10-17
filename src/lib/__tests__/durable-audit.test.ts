@@ -201,3 +201,83 @@ describe('durable-audit — configured', () => {
     expect(fetchSpy.mock.calls[0][0]).toBe(`${BACKEND}/api/sessions`)
   })
 })
+
+
+describe('ordered session mirror', () => {
+  beforeEach(() => { vi.resetModules(); vi.stubEnv('VITE_STELE_CORE_URL', BACKEND) })
+  afterEach(() => { vi.unstubAllGlobals(); vi.unstubAllEnvs() })
+
+  it('mirrors every entry in a multi-entry decision exactly once and closes after writes', async () => {
+    const calls: string[] = []
+    vi.stubGlobal('fetch', vi.fn(async (url: string, init: RequestInit) => {
+      if (url.endsWith('/api/sessions')) return { ok: true, json: async () => ({ session: { id: 'remote' }, token: 'synthetic' }) }
+      calls.push(url.endsWith('/end') ? 'end' : JSON.parse(init.body as string).action)
+      return { ok: true }
+    }))
+    const { createDurableMirror } = await import('../durable-audit')
+    const { createAuditTrail } = await import('../audit')
+    const state = buildDefaultState()
+    const mirror = createDurableMirror(state)
+    const trail = { ...createAuditTrail(state.sessionId), entries: [
+      baseEntry({ action: 'tobira-fired' }), baseEntry({ action: 'epoche-entered' }),
+    ] }
+    mirror.enqueue(trail)
+    mirror.enqueue(trail)
+    await mirror.end(state)
+    expect(calls).toEqual(['TOBIRA_FIRED', 'EPOCHE_ENTERED', 'end'])
+  })
+
+  it('keeps delayed session creation isolated across reset', async () => {
+    let resolveFirst!: (value: unknown) => void
+    const first = new Promise(resolve => { resolveFirst = resolve })
+    const posted: string[] = []
+    let creations = 0
+    vi.stubGlobal('fetch', vi.fn(async (url: string) => {
+      if (url.endsWith('/api/sessions')) {
+        if (++creations === 1) return first
+        return { ok: true, json: async () => ({ session: { id: 'new' }, token: 'synthetic-new' }) }
+      }
+      posted.push(url)
+      return { ok: true }
+    }))
+    const { createDurableMirror } = await import('../durable-audit')
+    const { createAuditTrail } = await import('../audit')
+    const oldState = buildDefaultState(), newState = { ...buildDefaultState(), sessionId: 'new-local' }
+    const oldMirror = createDurableMirror(oldState), newMirror = createDurableMirror(newState)
+    const trail = (id: string) => ({ ...createAuditTrail(id), entries: [baseEntry()] })
+    oldMirror.enqueue(trail(oldState.sessionId))
+    newMirror.enqueue(trail(newState.sessionId))
+    await newMirror.drain()
+    resolveFirst({ ok: true, json: async () => ({ session: { id: 'old' }, token: 'synthetic-old' }) })
+    await oldMirror.end(oldState)
+    expect(posted).toEqual([`${BACKEND}/api/sessions/new/events`, `${BACKEND}/api/sessions/old/events`, `${BACKEND}/api/sessions/old/end`])
+    newMirror.enqueue(trail(oldState.sessionId))
+    await newMirror.drain()
+    expect(posted).toHaveLength(3)
+  })
+  it('reset flushes evidence still hashing on the superseded local queue before closing', async () => {
+    const calls: string[] = []
+    vi.stubGlobal('fetch', vi.fn(async (url: string, init: RequestInit) => {
+      if (url.endsWith('/api/sessions')) return { ok: true, json: async () => ({ session: { id: 'old' }, token: 'synthetic' }) }
+      calls.push(url.endsWith('/end') ? 'end' : JSON.parse(init.body as string).action)
+      return { ok: true }
+    }))
+    const { createDurableMirror, closeDurableMirror } = await import('../durable-audit')
+    const { createAuditQueue } = await import('../audit-queue')
+    const { createAuditTrail } = await import('../audit')
+    const state = buildDefaultState()
+    const queue = createAuditQueue(createAuditTrail(state.sessionId))
+    let release!: () => void
+    const hashing = new Promise<void>(resolve => { release = resolve })
+    void queue.enqueue(async trail => {
+      await hashing
+      return { ...trail, entries: [baseEntry({ action: 'epoche-entered' })] }
+    })
+    const closing = closeDurableMirror(queue, createDurableMirror(state), state)
+    expect(calls).toEqual([])
+    release()
+    await closing
+    expect(calls).toEqual(['EPOCHE_ENTERED', 'end'])
+  })
+
+})

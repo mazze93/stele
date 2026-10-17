@@ -349,7 +349,7 @@ The intentional fragility doctrine, the EPOCHÉ lockout with no override, the TO
 ## Known limits
 
 A harness that overstated its own perimeter would be the exact failure it was
-built to detect. Four things are true right now:
+built to detect. The following boundaries remain explicit:
 
 - **The Anthropic key lives in the browser.** Extraction and the collaborator
   call post directly from the page with `anthropic-dangerous-direct-browser-access`.
@@ -385,10 +385,24 @@ built to detect. Four things are true right now:
   inside is never read as one — the signal is not coverage). Each of the three
   is pinned by a quarantine test that fails if it silently starts passing, so
   the gap cannot close unnoticed and cannot be quietly reclassified as fixed.
-- **The durable audit trail is optional and local.** `stele-core` owns the
-  server-side hash chain and the `/api/sessions/:id/verify` replay, but it is
-  not deployed and the browser does not yet call it. In the shipped
-  single-file bundle the trail is session-scoped and dies with the tab.
+- **The durable audit mirror is optional and best effort.** Hosted builds enable
+  the deployed `stele-core` service; plain offline builds remain unconfigured.
+  Every new local event is submitted in session order, with separate session
+  capabilities and server-owned chain hashes. Network errors or tab closure can
+  still leave durable omissions. A valid chain proves internal consistency of
+  stored metadata, not completeness, raw-paste attestation, or writer truth.
+- **One unpatched build-only advisory remains.** GHSA-vfj7-8cjw-p6xm reaches
+  `braces` through the single-file build plugin. Its glob patterns come from
+  trusted build configuration, not paste content; no patched upstream release
+  was listed on 2026-10-16. Exact audits are in the research evidence directory.
+
+## Reproducible gate/runner pairing
+
+`evals/pairing-lock.json` pins Aletheia and Apatea by commit. CI checks the pinned
+Python gate, the adversary's positive/benign controls, and STELE's real gate over
+JSONL. This establishes bounded lexical and verifier-adequacy contracts, not
+universal prompt-injection closure. The [research draft](docs/research/stele-threat-model.md)
+contains the threat model, evidence limits, and reproduction protocol.
 
 ## Getting Started
 

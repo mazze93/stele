@@ -1,0 +1,18 @@
+[tools]
+node = "24.21.0"
+pnpm = "12.11.2"
+python = "3.14.8"
+
+[tasks.check]
+run = "pnpm check"
+
+[tasks.build]
+run = "pnpm build"
+
+[tasks."core:check"]
+dir = "stele-core"
+run = "npx --no-install tsc --noEmit && npm test"
+
+[tasks."core:dry-run"]
+dir = "stele-core"
+run = "npx --no-install wrangler deploy --dry-run"

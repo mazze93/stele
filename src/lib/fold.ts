@@ -10,10 +10,10 @@
 // "ig<U+200B>nore previous instructions" fired nothing and was not blocked,
 // while the model reads it as "ignore previous instructions".
 //
-// The fold is what the model effectively reads. The ORIGINAL is what gets
-// attested: audit.ts hash-chains raw content, MAX_INPUT_CHARS is enforced
-// against raw length in gate(), and nothing here touches either. Do not
-// route the fold into the audit trail, the hash chain, or a length check.
+// The fold is a detection policy, not a proof of how a model reads Unicode.
+// gate() retains the original for raw-view matching and MAX_INPUT_CHARS.
+// audit.ts chains event metadata; it does not store or attest the raw paste.
+// Do not substitute folded text for raw length or transmitted input.
 
 // Unicode general category Cf (format). Covers U+200B ZWSP, U+200C ZWNJ,
 // U+200D ZWJ, U+FEFF BOM, U+2060 word joiner, U+200E/200F directional marks,
@@ -22,7 +22,7 @@
 const FORMAT_CHARS = /\p{Cf}/gu
 
 /**
- * Reduce input to the form a language model effectively reads.
+ * Produce the declared compatibility view for lexical detection.
  *
  * Removal runs BEFORE normalization, and the order is load-bearing:
  * `e` + U+200B + U+0301 composes to `é` only if the ZWSP is gone before

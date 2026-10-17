@@ -845,3 +845,26 @@ as 2026-09-19 one layer over: a gate that has only been read is not yet a gate.
 **Perimeter.** Not caught: runtime-computed sink names, aliased `document`,
 `DOMParser` output imported into the live DOM, and inline script in
 `site/public/*.html`, which isn't linted (zero sinks there by grep today).
+
+
+## 2026-10-16 — coordinated release and bounded class closure
+
+- Preserve the original working trees, including Aletheia's deleted tracked
+  files; all release clones live persistently in STELE's ignored `.worktrees/`.
+- Integrate unpublished markup-sink protections with current upstream and the
+  core dependency PR. Preserve the operator's pnpm 12 migration, move overrides
+  to pnpm-workspace.yaml, and keep the core as its independent npm package.
+- Pair exact Aletheia/Apatea commits in an executable CI contract. Reject
+  constant outputs, malformed assessments, and empty searches; preserve the
+  runner's runtime matrix and weekly schedule. Shell case mutation is ineligible.
+- Repair the durable mirror's last-entry-only omission and per-session reset
+  races. Drain pending local hashing before closing a superseded mirror.
+- A real concurrent production probe returned 500 despite unit checks. The
+  adapter exposes TransactionWriteConflict before P2034 normalization; classify
+  its exact cause kind as 409, never a message-only lookalike. No schema change.
+- Clarify ADR-0006: the chain covers event metadata, not original pasted text.
+  Keep separator, homoglyph, encoding, semantic, browser-key, transport, and
+  external-anchor limits explicit in the paper and public documentation.
+- Rollback: revert these Git revisions and restore the preflight Worker/Pages
+  versions. No migration, seed, reset, Access change, or credential replacement.
+  A remaining unpatched build-only braces advisory is recorded, not suppressed.
