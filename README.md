@@ -21,6 +21,22 @@ The stopping is not a failure mode. It is the highest-value action available.
 
 ---
 
+
+## Recorded demonstrations
+
+[![A Unicode-mutated paste triggers KAPU-001, EPOCHÉ, and deliberate reset](https://stele.mazzeleczzare.com/media/unicode-gate.gif)](https://stele.mazzeleczzare.com/#demos)
+
+A real browser capture using synthetic input: U+200B inside an override keyword
+still fires KAPU-001. EPOCHÉ suspends extraction; a deliberate reset restores
+ZANSHIN. This demonstrates the recorded lexical case, not universal injection
+prevention.
+
+Watch the captioned [gate and reset recording](https://stele.mazzeleczzare.com/media/unicode-gate.mp4)
+or [project compilation and integrity panel](https://stele.mazzeleczzare.com/media/compile-and-audit.mp4).
+The [website player](https://stele.mazzeleczzare.com/#demos) includes English
+captions, posters, playback controls, and no autoplay. Capture provenance and
+encoding details are in [the media record](docs/media/recordings.md).
+
 ## The Interface
 
 ```

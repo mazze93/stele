@@ -1,0 +1,13 @@
+WEBVTT
+
+00:00.000 --> 00:01.200
+Project context enters as data.
+
+00:01.200 --> 00:03.600
+A synthetic override hides U+200B inside “ignore”.
+
+00:03.600 --> 00:07.500
+KAPU-001 fires. EPOCHÉ suspends extraction and records the event.
+
+00:07.500 --> 00:09.900
+A deliberate reset restores ZANSHIN and clears the session key.

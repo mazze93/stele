@@ -277,3 +277,19 @@ Gate PR aletheia#23 and runner PR apatea#2 are merged after their checks passed.
 STELE release PR #102 carries code, reproducible evidence, and the research draft.
 One unpatched build-only braces advisory remains; other documented lexical,
 credential-tier, transport, and external-anchor limits remain explicit.
+
+
+### Recorded demonstrations requested during release
+
+Two actual browser captures are encoded under `site/public/media/`: the Unicode
+paste/EPOCHÉ/reset flow, and project compilation/REVIEW/project output/integrity
+panel. MP4, captions, posters, GIF preview, provenance, and SHA-256 manifests are
+included. Raw frames remain in the persistent ignored `.release/recordings/`.
+The landing page adds user-initiated captioned players and the README links its
+GIF preview to them. No model credentials, desktop content, or audio captured.
+
+The operator also invoked core-sample. Codex has no Claude Code arm/disarm hook
+lifecycle, so the record will be retrospective from a fixed transcript snapshot,
+with raw records private and any capture gaps explicitly annotated. A private
+local branch/worktree will hold derived artifacts; it will not be pushed with
+the public release.

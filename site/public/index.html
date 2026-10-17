@@ -94,6 +94,18 @@
   src: url(/fonts/ibmplexmono-600-normal.woff2) format('woff2');
   unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
 }
+
+/* Recorded product demonstrations: deliberate playback, no autoplay. */
+.demos{padding-block:72px;border-top:1px solid var(--ink-soft);}
+.demos .intro{max-width:65ch;color:var(--ink-soft);margin-bottom:28px;}
+.demo-grid{display:grid;grid-template-columns:1fr;gap:44px;max-width:1000px;}
+.demo-card{margin:0;min-width:0;}
+.demo-card video{display:block;width:100%;height:auto;aspect-ratio:1371/1000;
+  background:var(--tablet);border:1px solid var(--tablet-line);border-radius:6px;}
+.demo-card figcaption{margin-top:16px;color:var(--ink-soft);font-size:.94rem;line-height:1.6;}
+.demo-card figcaption strong{display:block;color:var(--ink);font-size:1.1rem;margin-bottom:4px;}
+.demo-card a{color:var(--cinnabar-deep);text-underline-offset:3px;}
+@media(max-width:860px){.demo-grid{grid-template-columns:1fr;}.demos{padding-block:48px;}}
 </style>
 <style>
 /* ============================================================
@@ -296,6 +308,7 @@ footer.site a:hover,footer.site a:focus-visible{color:var(--cinnabar-deep);}
     <nav class="site" aria-label="Primary">
       <a href="#insight">The idea</a>
       <a href="#how">How it works</a>
+      <a href="#demos">Watch</a>
       <a href="https://github.com/mazze93/stele">Get the compiler</a>
     </nav>
   </header>
@@ -314,7 +327,7 @@ footer.site a:hover,footer.site a:focus-visible{color:var(--cinnabar-deep);}
         <span>Anthropic&nbsp;API</span><span>→ <b>XML · MD · YAML</b></span>
       </div>
       <div class="cta-row reveal d4">
-        <a class="btn btn-primary" href="https://github.com/mazze93/stele">Compile a directive</a>
+        <a class="btn btn-primary" href="/app/">Compile a directive</a>
         <a class="btn btn-ghost" href="#how">See the method</a>
       </div>
     </div>
@@ -384,6 +397,44 @@ footer.site a:hover,footer.site a:focus-visible{color:var(--cinnabar-deep);}
   </div>
 </section>
 
+<!-- RECORDED DEMONSTRATIONS -->
+<section class="demos" id="demos" aria-labelledby="demo-title">
+  <div class="wrap">
+    <p class="eyebrow">The compiler, in use</p>
+    <h2 id="demo-title">Watch the boundary hold.</h2>
+    <p class="intro">Two short recordings from the hosted application. Synthetic input,
+      actual state transitions, and deliberate playback. Captions describe each step.</p>
+    <div class="demo-grid">
+      <figure class="demo-card">
+        <video controls playsinline preload="none" poster="/media/unicode-gate-poster.jpg"
+          aria-label="Unicode paste gate, EPOCHÉ suspension, and reset demonstration"
+          aria-describedby="gate-caption">
+          <source src="/media/unicode-gate.mp4" type="video/mp4">
+          <track kind="captions" src="/media/unicode-gate.vtt" srclang="en" label="English" default>
+          <p><a href="/media/unicode-gate.mp4">Download the gate demonstration</a>.</p>
+        </video>
+        <figcaption id="gate-caption"><strong>A hidden character. A visible stop.</strong>
+          A synthetic override places U+200B inside a keyword. KAPU-001 fires,
+          EPOCHÉ suspends extraction, and only a deliberate reset restores ZANSHIN.
+          <a href="/media/unicode-gate.vtt">Read the captions</a>.</figcaption>
+      </figure>
+      <figure class="demo-card">
+        <video controls playsinline preload="none" poster="/media/compile-and-audit-poster.jpg"
+          aria-label="Project compilation, review mode, portable output, and integrity telemetry demonstration"
+          aria-describedby="compile-caption">
+          <source src="/media/compile-and-audit.mp4" type="video/mp4">
+          <track kind="captions" src="/media/compile-and-audit.vtt" srclang="en" label="English" default>
+          <p><a href="/media/compile-and-audit.mp4">Download the compilation demonstration</a>.</p>
+        </video>
+        <figcaption id="compile-caption"><strong>Author the context. Inspect the result.</strong>
+          Select a project, switch to REVIEW, choose a project CLAUDE.md,
+          and inspect the integrity state and TOBIRA coupling matrix.
+          <a href="/media/compile-and-audit.vtt">Read the captions</a>.</figcaption>
+      </figure>
+    </div>
+  </div>
+</section>
+
 <!-- CLOSE -->
 <section class="close" id="start">
   <div class="wrap">
@@ -392,7 +443,7 @@ footer.site a:hover,footer.site a:focus-visible{color:var(--cinnabar-deep);}
     <p class="reveal d3">Stele is the standing record of how your work should be done —
     inscribed by you, compiled for the model, carried wherever you go next.</p>
     <div class="cta-row reveal d4" style="justify-content:center;">
-      <a class="btn btn-primary" href="https://github.com/mazze93/stele">Compile your directive</a>
+      <a class="btn btn-primary" href="/app/">Compile your directive</a>
       <a class="btn btn-ghost" href="https://github.com/mazze93/stele">Read the spec</a>
     </div>
   </div>
