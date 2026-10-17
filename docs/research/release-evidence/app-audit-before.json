@@ -1,0 +1,106 @@
+{
+  "advisories": {
+    "1153171": {
+      "findings": [
+        {
+          "version": "4.28.6",
+          "paths": [
+            ".>eslint-plugin-react-hooks>@babel/core>@babel/helper-compilation-targets>browserslist"
+          ],
+          "dev": true,
+          "optional": false,
+          "bundled": false
+        }
+      ],
+      "id": 1153171,
+      "title": "Browserslist: Unbounded memory growth (no cache eviction) via distinct query results, leading to eventual OOM",
+      "module_name": "browserslist",
+      "vulnerable_versions": "<=4.28.6",
+      "patched_versions": ">=4.28.7",
+      "severity": "high",
+      "cwe": "CWE-770",
+      "github_advisory_id": "GHSA-c83g-rgw3-j3cx",
+      "url": "https://github.com/advisories/GHSA-c83g-rgw3-j3cx"
+    },
+    "1153172": {
+      "findings": [
+        {
+          "version": "4.28.6",
+          "paths": [
+            ".>eslint-plugin-react-hooks>@babel/core>@babel/helper-compilation-targets>browserslist"
+          ],
+          "dev": true,
+          "optional": false,
+          "bundled": false
+        }
+      ],
+      "id": 1153172,
+      "title": "Browserslist: Uncaught crash / prototype write via untrusted browserslist-stats.json custom stats (normalizeStats)",
+      "module_name": "browserslist",
+      "vulnerable_versions": "<=4.28.6",
+      "patched_versions": ">=4.28.7",
+      "severity": "high",
+      "cwe": "CWE-248, CWE-1321",
+      "github_advisory_id": "GHSA-73wf-gq98-2v4g",
+      "url": "https://github.com/advisories/GHSA-73wf-gq98-2v4g"
+    },
+    "1193686": {
+      "findings": [
+        {
+          "version": "2.10.43",
+          "paths": [
+            ".>eslint-plugin-react-hooks>@babel/core>@babel/helper-compilation-targets>browserslist>baseline-browser-mapping"
+          ],
+          "dev": true,
+          "optional": false,
+          "bundled": false
+        }
+      ],
+      "id": 1193686,
+      "title": "baseline-browser-mapping process termination on invalid input causes denial of service",
+      "module_name": "baseline-browser-mapping",
+      "vulnerable_versions": ">=2.0.0 <2.11.0",
+      "patched_versions": ">=2.11.0",
+      "severity": "moderate",
+      "cwe": "CWE-705",
+      "github_advisory_id": "GHSA-w5vr-8v7q-w6rv",
+      "url": "https://github.com/advisories/GHSA-w5vr-8v7q-w6rv"
+    },
+    "1240992": {
+      "findings": [
+        {
+          "version": "3.0.3",
+          "paths": [
+            ".>vite-plugin-singlefile>micromatch>braces"
+          ],
+          "dev": true,
+          "optional": false,
+          "bundled": false
+        }
+      ],
+      "id": 1240992,
+      "title": "braces vulnerable to stack-exhaustion denial of service through deeply nested patterns",
+      "module_name": "braces",
+      "vulnerable_versions": "<=3.0.3",
+      "patched_versions": null,
+      "patched_versions_unpublished": true,
+      "severity": "high",
+      "cwe": "CWE-674",
+      "github_advisory_id": "GHSA-vfj7-8cjw-p6xm",
+      "url": "https://github.com/advisories/GHSA-vfj7-8cjw-p6xm"
+    }
+  },
+  "metadata": {
+    "vulnerabilities": {
+      "info": 0,
+      "low": 0,
+      "moderate": 1,
+      "high": 3,
+      "critical": 0
+    },
+    "dependencies": 98,
+    "devDependencies": 253,
+    "optionalDependencies": 66,
+    "totalDependencies": 366
+  }
+}

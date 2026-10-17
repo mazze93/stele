@@ -41,8 +41,13 @@ export function isSerializationFailure(err: unknown): boolean {
   // Driver-adapter path: node-postgres surfaces SQLSTATE on `code`, and Prisma
   // may carry the original under `cause`.
   if (code === "40001") return true;
-  const cause = (err as { cause?: { code?: unknown } }).cause;
+  const cause = (err as { cause?: { code?: unknown; kind?: unknown } }).cause;
   if (cause && typeof cause === "object" && cause.code === "40001") return true;
+
+  // Interactive transaction commit can expose the adapter error directly,
+  // before Prisma normalizes it to P2034. Observed under live Hyperdrive
+  // contention; adapter-pg maps SQLSTATE 40001 to this exact cause kind.
+  if (cause && typeof cause === "object" && cause.kind === "TransactionWriteConflict") return true;
 
   return false;
 }

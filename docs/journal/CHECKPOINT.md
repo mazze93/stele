@@ -243,3 +243,53 @@ Each has a quarantine test that fails if it silently starts passing:
   a file that never existed in this repo.
 - Deploy shape: root `wrangler.toml` vs `site/README.md`. One is stale.
 - Ollama is gone; Muse Glimmer blocked past phase 2.
+
+
+## 2026-10-16 — release candidate in persistent isolation
+
+Working directory: `.worktrees/full-class-closure` beneath the original STELE
+checkout. Companion clones: `.worktrees/aletheia`, `.worktrees/apatea`.
+The original checkout and its operator-local AGENTS/.codex files are preserved.
+
+The candidate aligns upstream dependencies, markup-sink protections, pnpm 12,
+Pages assembly, core serialization handling, and a pinned gate/runner CI job.
+Research draft: `docs/research/stele-threat-model.md`; reproducibility protocol
+and evidence are alongside it. See production-finding.json for the live error
+that prevents treating local tests as deployment proof. Deployment and final
+runtime receipts are the next checkpoint; do not infer them from this entry.
+
+
+### 2026-10-16 — production proof captured
+
+Core version b33fbfc9-f78a-4b49-9def-bea019fb21b0: twelve concurrent appends,
+nine bounded serialization retries, twelve entries replayed valid. Admin and
+cross-session denials, malformed boolean, and post-close rejection all passed.
+No database or credential changes. See core-production.json and deployment.json.
+
+Hosted browser: U+200B override -> KAPU-001 -> EPOCHÉ, three local audit entries,
+three successful durable event submissions, zero model requests in the monitored
+flow. Reset restores ZANSHIN and clears the synthetic key. Screenshot and
+sanitized network receipt are in release-evidence. Four earlier synthetic probe
+sessions were left open before cleanup was added; transient tokens were not
+retained. Existing sessions were not read or modified.
+
+Gate PR aletheia#23 and runner PR apatea#2 are merged after their checks passed.
+STELE release PR #102 carries code, reproducible evidence, and the research draft.
+One unpatched build-only braces advisory remains; other documented lexical,
+credential-tier, transport, and external-anchor limits remain explicit.
+
+
+### Recorded demonstrations requested during release
+
+Two actual browser captures are encoded under `site/public/media/`: the Unicode
+paste/EPOCHÉ/reset flow, and project compilation/REVIEW/project output/integrity
+panel. MP4, captions, posters, GIF preview, provenance, and SHA-256 manifests are
+included. Raw frames remain in the persistent ignored `.release/recordings/`.
+The landing page adds user-initiated captioned players and the README links its
+GIF preview to them. No model credentials, desktop content, or audio captured.
+
+The operator also invoked core-sample. Codex has no Claude Code arm/disarm hook
+lifecycle, so the record will be retrospective from a fixed transcript snapshot,
+with raw records private and any capture gaps explicitly annotated. A private
+local branch/worktree will hold derived artifacts; it will not be pushed with
+the public release.

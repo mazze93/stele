@@ -1,17 +1,18 @@
 {
   "name": "stele",
   "private": true,
-  "version": "1.1.2",
+  "version": "1.2.0",
   "type": "module",
-  "packageManager": "pnpm@10.34.5",
+  "packageManager": "pnpm@12.11.2+sha512.25a51652a196785af5f28bda6dfe8dc582ebefa4ac1d180221ce1390231c5fb76637822ea4b6e4633ce74acdcb0a77f725af11bad38177fdeddaee818a955cb9",
   "scripts": {
     "dev": "vite",
     "build": "tsc -b && vite build && mv dist/index.html dist/bundle.html",
     "lint": "eslint .",
     "preview": "vite preview",
-    "test": "vitest run src evals/eval.test.ts",
+    "test": "vitest run src evals/eval.test.ts evals/markup-sinks.test.ts",
     "eval": "vitest run evals/eval.test.ts",
-    "eval:live": "vitest run evals/live"
+    "eval:live": "vitest run evals/live",
+    "check": "tsc -b --noEmit && pnpm lint && pnpm test"
   },
   "dependencies": {
     "@dnd-kit/core": "^6.3.1",
@@ -81,10 +82,5 @@
     "vite": "^8.3.4",
     "vite-plugin-singlefile": "^2.3.3",
     "vitest": "^5.0.3"
-  },
-  "pnpm": {
-    "overrides": {
-      "@babel/core": "^7.29.7"
-    }
   }
 }

@@ -1,0 +1,17 @@
+{
+  "observation": "pre-release concurrent appends returned HTTP 500",
+  "classification": "DriverAdapterError / TransactionWriteConflict",
+  "source_confirmation": "@prisma/adapter-pg maps SQLSTATE 40001 to cause.kind TransactionWriteConflict",
+  "repair": "recognize exact cause.kind in addition to P2034 and SQLSTATE 40001",
+  "regressions": [
+    "normalized Prisma code",
+    "raw SQLSTATE",
+    "cause SQLSTATE",
+    "direct adapter cause kind",
+    "unrelated kind rejected",
+    "message-only lookalike rejected"
+  ],
+  "pre_release_probe_limit": "Two failed probe runs each created two synthetic sessions before cleanup was added; their transient tokens were not retained. No existing session was modified.",
+  "status": "deployed replay passed",
+  "verification_receipt": "core-production.json"
+}

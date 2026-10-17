@@ -13,6 +13,6 @@ const pkg = createRequire(import.meta.url)('./package.json') as { version: strin
 
 export default defineConfig({
   plugins: [react(), viteSingleFile()],
-  resolve: { alias: { '@': path.resolve(__dirname, './src') } },
+  resolve: { alias: { '@': path.resolve(import.meta.dirname, './src') } },
   define: { __STELE_VERSION__: JSON.stringify(pkg.version) },
 })

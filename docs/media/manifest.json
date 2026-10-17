@@ -1,0 +1,30 @@
+{
+  "compile-and-audit-poster.jpg": {
+    "bytes": 138945,
+    "sha256": "fedde90f1f21462f8d3d968b4e0cf0e4b3cab0c6798b639646713c7384f1371a"
+  },
+  "compile-and-audit.mp4": {
+    "bytes": 406638,
+    "sha256": "ded1b1f4d74de8f42c2a824ebed5aa79380da5546675594e4c5e8e90bfed0cfa"
+  },
+  "compile-and-audit.vtt": {
+    "bytes": 402,
+    "sha256": "19a7ac88a977e36b53c2330794fc9c697103f8b2dcdb1545cde4dfb68fed1619"
+  },
+  "unicode-gate-poster.jpg": {
+    "bytes": 32287,
+    "sha256": "f11a09ac6dce6560d0acfe4b65443df5a8e129d9427a4c42dd1a7149863fab57"
+  },
+  "unicode-gate.gif": {
+    "bytes": 465759,
+    "sha256": "010580af0c26b332601535b4a22243d529347d48895304f9abc844cd4d65e3cf"
+  },
+  "unicode-gate.mp4": {
+    "bytes": 301576,
+    "sha256": "83ce9e518efb8c842c5022b80f55c9bdd22ad97e7671554fb88b1fa06b8a5d8e"
+  },
+  "unicode-gate.vtt": {
+    "bytes": 325,
+    "sha256": "fea61047acbc414189d667f642bf7ba61c4934d9c34935afb881f6aa2a69bb7f"
+  }
+}

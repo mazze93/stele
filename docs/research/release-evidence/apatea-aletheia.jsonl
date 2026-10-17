@@ -1,0 +1,1 @@
+{"kind": "run", "ts": "2026-10-17T00:52:29+00:00", "target": "aletheia", "origin": "web_search", "atoms": 21, "variants": 883, "checks": 1808, "findings": 0, "perimeter": {"tried": {"unicode_adjacency": 504, "invisible": 252, "case": 26, "form_reshape": 101}, "held": {"determinism": 21, "extent_stability": 904, "monotonicity": 883}}}

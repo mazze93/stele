@@ -4,6 +4,7 @@ import reactHooks from 'eslint-plugin-react-hooks'
 import reactRefresh from 'eslint-plugin-react-refresh'
 import tseslint from 'typescript-eslint'
 import { defineConfig, globalIgnores } from 'eslint/config'
+import { markupSinkGate } from './eslint/markup-sinks.js'
 
 // shadcn/ui primitives are generated, not authored. They export variant objects
 // alongside components (which react-refresh/only-export-components flags) and
@@ -14,7 +15,7 @@ import { defineConfig, globalIgnores } from 'eslint/config'
 const VENDORED = ['src/components/ui/**', 'src/hooks/use-toast.ts']
 
 export default defineConfig([
-  globalIgnores(['dist', 'stele-core/generated', 'stele-core/dist']),
+  globalIgnores(['dist', 'stele-core/generated', 'stele-core/dist', '.worktrees/**', '.remember/**', '.release/**', '.closure/**']),
   {
     files: ['**/*.{ts,tsx}'],
     extends: [
@@ -57,4 +58,9 @@ export default defineConfig([
       '@typescript-eslint/no-unused-vars': 'off',
     },
   },
+  // Security boundary, not style: applies to vendored files too, and stays
+  // last so no later block can replace its no-restricted-* rules. Rationale
+  // and policy live in eslint/markup-sinks.js; evals/markup-sinks.test.ts
+  // proves it fires.
+  markupSinkGate,
 ])

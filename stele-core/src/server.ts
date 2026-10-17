@@ -7,7 +7,7 @@ import { projects } from "./routes/projects.js";
 import { drift } from "./routes/drift.js";
 
 export function createApp() {
-  const app = new Hono();
+  const app = new Hono<{ Bindings: { CF_VERSION_METADATA?: { id: string } } }>();
 
   // CORS — allows Stele (Vite dev: localhost:5173) and Stele deployed origins
   app.use(
@@ -43,7 +43,7 @@ export function createApp() {
 
   // Health check
   app.get("/health", (c) =>
-    c.json({ status: "ok", service: "stele-core", ts: new Date().toISOString() })
+    c.json({ status: "ok", service: "stele-core", ts: new Date().toISOString(), version: c.env?.CF_VERSION_METADATA?.id ?? null })
   );
 
   // Routes

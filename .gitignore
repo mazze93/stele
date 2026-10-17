@@ -46,3 +46,8 @@ site/deploy/
 
 # eval report is regenerated every run; the baseline is committed
 evals/report.json
+
+# Local release bundles and pinned gate/runner checkouts
+.release/
+.closure/
+evals/pairing-report.json

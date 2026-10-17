@@ -1,0 +1,38 @@
+{
+  "input": "synthetic KAPU phrase with U+200B inside keyword",
+  "ui": "EPOCHÉ; KAPU-001; three local audit entries",
+  "reset": "ZANSHIN restored and synthetic key cleared",
+  "modelRequests": 0,
+  "coreResponses": [
+    {
+      "path": "/api/sessions/:id/end",
+      "status": 204
+    },
+    {
+      "path": "/api/sessions",
+      "status": 201
+    },
+    {
+      "path": "/api/sessions/:id/events",
+      "status": 204
+    },
+    {
+      "path": "/api/sessions/:id/end",
+      "status": 200
+    },
+    {
+      "path": "/api/sessions/:id/events",
+      "status": 201
+    },
+    {
+      "path": "/api/sessions/:id/events",
+      "status": 201
+    },
+    {
+      "path": "/api/sessions/:id/events",
+      "status": 201
+    }
+  ],
+  "truncated": false,
+  "hasMore": false
+}

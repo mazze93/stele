@@ -148,6 +148,13 @@ never accepts or persists a caller-provided hash. `GET
 the first divergence, which is the check a client-owned hash could never
 provide: verification by a party other than the writer.
 
-The remaining gap is narrower than "the server trusts the client": it is that
-`/verify` has never run against a session with real, concurrent write
-traffic outside this repo's own tests.
+Production concurrency is exercised by `scripts/smoke-core.py` from the root.
+See `docs/research/release-evidence/` for revision-specific receipts. The script
+uses synthetic sessions and never prints their tokens. A pre-release probe
+exposed `DriverAdapterError.cause.kind = TransactionWriteConflict` during
+interactive transaction commit; the classifier now returns 409 for that shape
+as well as P2034 and SQLSTATE 40001. A message alone does not authorize retry.
+
+`/health` includes the Worker version-metadata identifier. Deployment success
+and data-path verification remain separate claims. The chain covers event
+metadata, not pasted content, and has no independent external anchor.
