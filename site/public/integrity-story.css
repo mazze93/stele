@@ -63,3 +63,6 @@ a:focus-visible,button:focus-visible{outline:3px solid var(--gold);outline-offse
 @media(max-width:420px){.story-scene{padding:20px;}.story-controls{padding:0 20px 20px;}.story-label{padding:12px 20px;}
   .capabilities{grid-template-columns:1fr;}.mark small{display:none;}.verdict{font-size:1.3rem;}}
 @media(prefers-reduced-motion:reduce){html{scroll-behavior:auto;}*,*::before,*::after{animation:none!important;transition:none!important;}}
+
+/* Keep suspension visible while a CDN optimizer defers initialization. */
+.integrity-story:not(.interactive) .story-scene:not([data-scene="EPOCHÉ"]){display:none;}
