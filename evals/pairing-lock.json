@@ -1,11 +1,11 @@
 {
   "aletheia": {
     "repository": "mazze93/aletheia",
-    "revision": "dddd2b4f1a1eeb61f1d4040bc9c9774595821cf5"
+    "revision": "8610069a3f113afa31856939c9628abdd06099d9"
   },
   "apatea": {
     "repository": "mazze93/apatea",
-    "revision": "c33083412169b69ee1b66c5c5b7a3bf9c69ba4ac"
+    "revision": "160e7ad6d4824f12411a8455edd4878e75b0da58"
   },
   "scope": "bounded lexical policy, verifier adequacy, and consumer composition; no universal prompt-injection closure"
 }
