@@ -1,10 +1,27 @@
 {
   "id": "stele-suspended-extraction-v1",
-  "approval": "proposed-awaiting-human-review",
+  "approval": "human-approved",
   "objective": "WABI and EPOCHÉ prohibit extraction; both states must remain in scope.",
-  "states": ["ZANSHIN", "UNHEIMLICH", "WABI", "EPOCHÉ"],
-  "requiredWitnesses": ["WABI", "EPOCHÉ"],
+  "states": [
+    "ZANSHIN",
+    "UNHEIMLICH",
+    "WABI",
+    "EPOCHÉ"
+  ],
+  "requiredWitnesses": [
+    "WABI",
+    "EPOCHÉ"
+  ],
   "claim": "suspended-deny",
   "precondition": "suspended",
-  "scope": "Finite capability-table contract only; no UI reachability, universal injection prevention, or formal proof kernel claim."
+  "scope": "Finite capability-table contract only; no UI reachability, universal injection prevention, or formal proof kernel claim.",
+  "approvalRecord": {
+    "source": "User approval in Codex conversation",
+    "statement": "approved",
+    "date": "2026-11-13",
+    "scope": "stele-suspended-extraction-v1 objective only",
+    "approvedProposalSha256": "24a29e60fe2f39d940d98e4ca6b775f93b628d0ce0ccd1232387c0b72fde77b7",
+    "proposalCommit": "933b89603adc03c7475ea6da170c9dcba222f00b",
+    "attestation": "Conversation approval transcribed by Codex; not a cryptographic human signature or externally enforced trust anchor."
+  }
 }
