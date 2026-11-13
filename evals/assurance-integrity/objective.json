@@ -1,0 +1,10 @@
+{
+  "id": "stele-suspended-extraction-v1",
+  "approval": "proposed-awaiting-human-review",
+  "objective": "WABI and EPOCHÉ prohibit extraction; both states must remain in scope.",
+  "states": ["ZANSHIN", "UNHEIMLICH", "WABI", "EPOCHÉ"],
+  "requiredWitnesses": ["WABI", "EPOCHÉ"],
+  "claim": "suspended-deny",
+  "precondition": "suspended",
+  "scope": "Finite capability-table contract only; no UI reachability, universal injection prevention, or formal proof kernel claim."
+}

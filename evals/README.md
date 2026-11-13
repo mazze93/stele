@@ -96,3 +96,11 @@ neither thing.
 
 Synthetic credentials only. The APOCRYPHA cases are shaped like credentials and
 are not credentials; keep it that way.
+
+## Assurance integrity
+
+The [assurance-integrity experiment](assurance-integrity/README.md) evaluates
+impossible claims, empty preconditions, and transitive scope weakening against
+the real integrity capability table, with separate baseline, witness, mutation,
+and replay evidence. Run `node evals/assurance-integrity/run.mjs` (Node 24; no
+packages). The proposed objective is awaiting human review.
