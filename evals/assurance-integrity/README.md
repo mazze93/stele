@@ -17,8 +17,10 @@ node evals/assurance-integrity/replay.mjs \
   .closure/assurance-integrity/transitive-weakening/candidate
 ```
 
-An optional first argument to `run.mjs` selects the evidence directory. Use a new
-empty directory per run. Nonzero execution, malformed evidence, timeout, or an
+An optional first argument to `run.mjs` selects the evidence directory. The run
+directory must not exist: atomic creation rejects existing directories, files,
+and directory symlinks. Choose a new path for repeat runs, for example
+`node evals/assurance-integrity/run.mjs .closure/assurance-second-run`. Nonzero execution, malformed evidence, timeout, or an
 unexpected decision terminates the experiment with nonzero exit status.
 
 ## Approved objective and adversary
@@ -65,8 +67,22 @@ KIRI. Two mandatory states exhaust this particular precondition's domain.
 For every case the artifact includes the original specification, baseline and
 candidate modules, agent changes, bypass/provenance description, attempted
 obligation result, per-gate decision, mutation evidence, and independent replay.
-`manifest.json` binds file bytes with SHA-256; `summary.json` records Node and
+`manifest.json` binds emitted evidence bytes with SHA-256; `summary.json` records Node and
 source revision. Preserve the implementation commit with the artifact.
+
+The writer creates a private run directory and exclusively creates each evidence
+file (`wx`), rejecting existing files and final-component symlinks. It hashes
+the same buffers it writes, rather than walking, checking, and reopening mutable
+filesystem paths. Unexpected files cannot enter the manifest. A later alteration
+produces a digest mismatch on independent verification; the manifest does not
+assert that files cannot change after emission. The output parent is trusted.
+Private permissions are not isolation from processes running as the same user.
+
+Run the race, symlink, exclusive-write, and concurrent-writer regression checks:
+
+```sh
+node --test evals/assurance-integrity/evidence.test.mjs
+```
 
 `replay.mjs` is separately implemented and runs in a fresh process against a
 fresh temporary copy, checking the original states directly. It never imports

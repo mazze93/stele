@@ -21,6 +21,8 @@ jobs:
       - run: npx tsc -b --noEmit
       - run: pnpm lint
       - run: pnpm test
+      - name: Assurance evidence writer regression checks
+        run: node --test evals/assurance-integrity/evidence.test.mjs
       - name: Assurance integrity adversarial experiment
         run: node evals/assurance-integrity/run.mjs
       - name: Public integrity examples match the production gate

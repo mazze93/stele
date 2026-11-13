@@ -3,20 +3,22 @@ import { createHash } from 'node:crypto'
 import { execFileSync, spawnSync } from 'node:child_process'
 import { cpSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
-import { dirname, join, resolve } from 'node:path'
+import { dirname, join, relative, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import assert from 'node:assert/strict'
+import { createEvidenceWriter } from './evidence.mjs'
 
 const here = dirname(fileURLToPath(import.meta.url))
 const root = resolve(here, '../..')
 const output = resolve(process.argv[2] ?? join(root, '.closure/assurance-integrity'))
-mkdirSync(output, { recursive: true })
+const evidence = createEvidenceWriter(output)
 const objectiveBytes = readFileSync(join(here, 'objective.json'))
 const objective = JSON.parse(objectiveBytes)
 const source = readFileSync(join(root, 'src/lib/integrity.ts'), 'utf8')
 assert.ok(!/^\s*(?:import\s|export\s.*\sfrom\s)/m.test(source), 'EPOCHÉ: integrity dependency closure changed; review capture policy')
 const sha = value => createHash('sha256').update(value).digest('hex')
-const json = (path, value) => writeFileSync(path, JSON.stringify(value, null, 2) + '\n')
+const writeEvidence = (path, value) => evidence.write(relative(output, path), value)
+const json = (path, value) => writeEvidence(path, JSON.stringify(value, null, 2) + '\n')
 const precondition = `import { INTEGRITY_STATES } from './integrity.ts'
 export const inScope = state => state === 'WABI' || state === 'EPOCHÉ'
 `
@@ -57,7 +59,7 @@ const cases = [
 const results = []
 for (const task of cases) {
   const dir = join(output, task.id)
-  mkdirSync(dir, { recursive: true })
+  mkdirSync(dir, { mode: 0o700 })
   const original = { ...objective, claim: task.original ?? task.claim ?? objective.claim }
   json(join(dir, 'original-specification.json'), original)
   const baseline = { 'integrity.ts': source, 'scope.mjs': precondition, 'proof.mjs': proof,
@@ -72,10 +74,10 @@ for (const task of cases) {
   }
   const baselineDir = join(dir, 'baseline')
   const candidateDir = join(dir, 'candidate')
-  mkdirSync(baselineDir, { recursive: true })
-  mkdirSync(candidateDir, { recursive: true })
-  for (const [name, content] of Object.entries(baseline)) writeFileSync(join(baselineDir, name), content)
-  for (const [name, content] of Object.entries(candidate)) writeFileSync(join(candidateDir, name), content)
+  mkdirSync(baselineDir, { mode: 0o700 })
+  mkdirSync(candidateDir, { mode: 0o700 })
+  for (const [name, content] of Object.entries(baseline)) writeEvidence(join(baselineDir, name), content)
+  for (const [name, content] of Object.entries(candidate)) writeEvidence(join(candidateDir, name), content)
   json(join(dir, 'agent-changes.json'), Object.keys(candidate).filter(name => candidate[name] !== baseline[name])
     .map(path => ({ path, before: baseline[path], after: candidate[path] })))
   json(join(dir, 'attempted-bypass.json'), { ...task, provenance: 'Deterministic fixtures authored by Codex; no autonomous-agent trial or human approval is claimed.' })
@@ -139,17 +141,8 @@ json(join(output, 'summary.json'), { revision, node: process.version,
   approval: objective.approval, objectiveDigest: sha(objectiveBytes),
   trustBoundary: 'Local deterministic experiment. Driver, replay checker and objective are trusted; candidate modules are synthetic and untrusted conceptually, not OS-sandboxed. Separate processes share Node and hardware.',
   results })
-for (const name of ['run.mjs', 'replay.mjs', 'objective.json']) cpSync(join(here, name), join(output, name))
-const files = {}
-function inventory(dir, prefix = '') {
-  // Inventory is computed after all evidence is written; the manifest is not self-hashed.
-  for (const name of readdirSync(dir)) {
-    const path = join(dir, name)
-    if (statSync(path).isDirectory()) inventory(path, prefix + name + '/')
-    else if (prefix + name !== 'manifest.json') files[prefix + name] = sha(readFileSync(path))
-  }
+for (const name of ['run.mjs', 'replay.mjs', 'evidence.mjs', 'objective.json']) {
+  writeEvidence(join(output, name), readFileSync(join(here, name)))
 }
-import { readdirSync, statSync } from 'node:fs'
-inventory(output)
-json(join(output, 'manifest.json'), { algorithm: 'sha256', files })
+evidence.finalize()
 console.log(JSON.stringify({ decision: 'ZANSHIN', cases: results.length, output }))
