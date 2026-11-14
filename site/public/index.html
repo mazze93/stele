@@ -5,77 +5,54 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>STELE — when control is in doubt, stop.</title>
 <meta name="description" content="Your rules for AI work. STELE compiles your instructions, detects registered attempts to rewrite them, and deliberately suspends the session when its directive can no longer be trusted.">
+<link rel="canonical" href="https://stele.mazzeleczzare.com/">
+<link rel="icon" href="/app/favicon.svg" type="image/svg+xml">
+<meta property="og:type" content="website">
+<meta property="og:title" content="STELE — when control is in doubt, stop.">
+<meta property="og:description" content="STELE compiles your project’s rules into instructions for a Claude session, and stops when pasted text tries to rewrite them.">
+<meta property="og:url" content="https://stele.mazzeleczzare.com/">
+<meta property="og:image" content="https://stele.mazzeleczzare.com/media/integrity-cycle-poster.jpg">
+<meta name="twitter:card" content="summary_large_image">
+<!-- The two display/body faces are needed for the first paint; fetch them with the HTML. -->
+<link rel="preload" href="/fonts/cinzel-wght.ef95296c.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="/fonts/hankengrotesk-wght.1f21c6ea.woff2" as="font" type="font/woff2" crossorigin>
 <style>
+/* Fonts. Cinzel and Hanken Grotesk are variable fonts: one file covers every
+   weight, so each family is declared once with a weight range. File names carry
+   a content hash, which is what makes the immutable cache rule in _headers safe. */
 @font-face {
   font-family: 'Cinzel';
   font-style: normal;
-  font-weight: 400;
+  font-weight: 400 900;
   font-display: swap;
-  src: url(/fonts/cinzel-400-normal.woff2) format('woff2');
-  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
-}
-@font-face {
-  font-family: 'Cinzel';
-  font-style: normal;
-  font-weight: 600;
-  font-display: swap;
-  src: url(/fonts/cinzel-600-normal.woff2) format('woff2');
-  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
-}
-@font-face {
-  font-family: 'Cinzel';
-  font-style: normal;
-  font-weight: 800;
-  font-display: swap;
-  src: url(/fonts/cinzel-800-normal.woff2) format('woff2');
-  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
-}
-@font-face {
-  font-family: 'Hanken Grotesk';
-  font-style: italic;
-  font-weight: 400;
-  font-display: swap;
-  src: url(/fonts/hankengrotesk-400-italic.woff2) format('woff2');
+  src: url(/fonts/cinzel-wght.ef95296c.woff2) format('woff2');
   unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
 }
 @font-face {
   font-family: 'Hanken Grotesk';
   font-style: normal;
-  font-weight: 300;
+  font-weight: 100 900;
   font-display: swap;
-  src: url(/fonts/hankengrotesk-300-normal.woff2) format('woff2');
+  src: url(/fonts/hankengrotesk-wght.1f21c6ea.woff2) format('woff2');
   unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
 }
+/* Width-matched stand-in while Hanken Grotesk loads: its letter widths are within
+   1% of Arial's, so local Arial-class fonts (Liberation Sans on Linux, Roboto on
+   Android) wrap body text on the same lines and the page does not jump on swap. */
 @font-face {
-  font-family: 'Hanken Grotesk';
-  font-style: normal;
-  font-weight: 400;
-  font-display: swap;
-  src: url(/fonts/hankengrotesk-400-normal.woff2) format('woff2');
-  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
-}
-@font-face {
-  font-family: 'Hanken Grotesk';
-  font-style: normal;
-  font-weight: 500;
-  font-display: swap;
-  src: url(/fonts/hankengrotesk-500-normal.woff2) format('woff2');
-  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
-}
-@font-face {
-  font-family: 'Hanken Grotesk';
-  font-style: normal;
-  font-weight: 700;
-  font-display: swap;
-  src: url(/fonts/hankengrotesk-700-normal.woff2) format('woff2');
-  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+  font-family: 'Hanken Fallback';
+  src: local('Arial'), local('Liberation Sans'), local('Helvetica'), local('Roboto');
+  size-adjust: 100.6%;
+  ascent-override: 99.4%;
+  descent-override: 30.1%;
+  line-gap-override: 0%;
 }
 @font-face {
   font-family: 'IBM Plex Mono';
   font-style: normal;
   font-weight: 400;
   font-display: swap;
-  src: url(/fonts/ibmplexmono-400-normal.woff2) format('woff2');
+  src: url(/fonts/ibmplexmono-400.c36f509c.woff2) format('woff2');
   unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
 }
 @font-face {
@@ -83,15 +60,7 @@
   font-style: normal;
   font-weight: 500;
   font-display: swap;
-  src: url(/fonts/ibmplexmono-500-normal.woff2) format('woff2');
-  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
-}
-@font-face {
-  font-family: 'IBM Plex Mono';
-  font-style: normal;
-  font-weight: 600;
-  font-display: swap;
-  src: url(/fonts/ibmplexmono-600-normal.woff2) format('woff2');
+  src: url(/fonts/ibmplexmono-500.a76f53ca.woff2) format('woff2');
   unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
 }
 
@@ -149,7 +118,7 @@ body{
     radial-gradient(90% 70% at -10% 110%, #ddd3bf 0%, transparent 50%),
     var(--stone);
   color:var(--ink);
-  font-family:"Hanken Grotesk",system-ui,sans-serif;line-height:1.62;
+  font-family:"Hanken Grotesk","Hanken Fallback",system-ui,sans-serif;line-height:1.62;
   -webkit-font-smoothing:antialiased;overflow-x:hidden;
 }
 body::before{ /* grain — decorative */
@@ -229,6 +198,11 @@ nav.site a:last-child{color:var(--ink);border-bottom:2px solid var(--cinnabar);p
 footer.site{border-top:1px solid rgba(33,30,26,.16);padding-block:30px;display:flex;
   justify-content:space-between;flex-wrap:wrap;gap:14px;font-size:.78rem;color:var(--ink-soft);}
 footer.site a{color:var(--ink-soft);text-decoration:none;}
+.close .data-note{font-size:.86rem;max-width:60ch;margin:2.2em auto 0;}
+.skip{position:absolute;left:12px;top:-60px;z-index:20;background:var(--ink);color:var(--stone);
+  padding:10px 16px;font-size:.9rem;text-decoration:none;}
+.skip:focus{top:12px;}
+main:focus{outline:none;}
 footer.site a:hover,footer.site a:focus-visible{color:var(--cinnabar-deep);}
 
 /* ============================================================ MOTION */
@@ -248,9 +222,11 @@ footer.site a:hover,footer.site a:focus-visible{color:var(--cinnabar-deep);}
 </style>
 <link rel="stylesheet" href="/integrity-story.css">
 <noscript><style>.integrity-story:not(.interactive) .story-scene{display:block!important;}</style></noscript>
-<script src="/integrity-story.js" defer></script>
+<!-- data-cfasync="false": Cloudflare Rocket Loader must not re-defer the walkthrough. -->
+<script src="/integrity-story.js" defer data-cfasync="false"></script>
 </head>
 <body>
+<a class="skip" href="#main">Skip to content</a>
 
 <div class="wrap">
 
@@ -261,9 +237,13 @@ footer.site a:hover,footer.site a:focus-visible{color:var(--cinnabar-deep);}
       <a href="#insight">The idea</a>
       <a href="#how">How it works</a>
       <a href="#demos">Watch</a>
-      <a href="https://github.com/mazze93/stele">Get the compiler</a>
+      <a href="https://github.com/mazze93/stele/releases/latest">Get the compiler</a>
     </nav>
   </header>
+</div>
+
+<main id="main" tabindex="-1">
+<div class="wrap">
 
   <!-- The initial EPOCHÉ view is an editorial explanation, not application chrome. -->
   <section class="hero" aria-labelledby="hero-title">
@@ -347,15 +327,15 @@ footer.site a:hover,footer.site a:focus-visible{color:var(--cinnabar-deep);}
 <section class="insight" id="insight">
   <div class="wrap">
     <div class="grid">
-      <h2 class="reveal d1">Memory is the model's.<br/><em>The directive is yours.</em></h2>
+      <h2 class="reveal d1">Memory is the model’s.<br/><em>The directive is yours.</em></h2>
       <div class="body reveal d2">
-        <p>A model's memory is passive and model-specific. It drifts, it resets, it belongs
+        <p>A model’s memory is passive and model-specific. It drifts, it resets, it belongs
         to whichever system you happened to be talking to. <strong>A directive is the active
-        opposite</strong> — a model-agnostic instrument you author on purpose and keep.</p>
-        <p>Stele treats it like source. Declare each project's domain, its compliance tier,
-        the postures that govern how hard to audit, and the lines that must never be crossed.
-        STELE resolves the active project and compiles the rest into context the model reads
-        first — so the same intent holds even when you switch models entirely.</p>
+        opposite</strong>: an instrument you author on purpose and keep.</p>
+        <p>STELE treats it like source. Declare each project’s posture, its compliance
+        requirements, and the lines that must never be crossed. Choose the projects in play,
+        and STELE compiles them into the instructions a Claude session reads first, so the
+        same intent holds from one session to the next.</p>
       </div>
     </div>
   </div>
@@ -378,8 +358,8 @@ footer.site a:hover,footer.site a:focus-visible{color:var(--cinnabar-deep);}
         <p>The selected project and mode become an egregore: the compiled instructions for your AI session.</p>
       </div>
       <div class="step reveal d3"><div class="num">III</div>
-        <h3>Carry it anywhere</h3>
-        <p>Claude XML, Markdown, or YAML — the same directive steers any model, with no vendor lock on your context.</p>
+        <h3>Carry it into the session</h3>
+        <p>Paste it into claude.ai’s instructions, or save it as a global or project CLAUDE.md. The source stays with you.</p>
       </div>
     </div>
   </div>
@@ -393,7 +373,7 @@ footer.site a:hover,footer.site a:focus-visible{color:var(--cinnabar-deep);}
     <p class="intro">Start with a guided explanation of all four states, ending in a recorded application lockout. The original recordings follow, with synthetic input and deliberate playback.</p>
     <div class="demo-grid">
       <figure class="demo-card">
-        <video controls playsinline preload="none" poster="/media/integrity-cycle-poster.jpg"
+        <video controls playsinline preload="none" poster="/media/integrity-cycle-poster.webp"
           aria-label="Four integrity states explained, ending in the actual EPOCHÉ lockout" aria-describedby="cycle-caption">
           <source src="/media/integrity-cycle.mp4" type="video/mp4">
           <track kind="captions" src="/media/integrity-cycle.vtt" srclang="en" label="English" default>
@@ -406,7 +386,7 @@ footer.site a:hover,footer.site a:focus-visible{color:var(--cinnabar-deep);}
           <a href="/media/integrity-cycle.vtt">Read the captions</a>.</figcaption>
       </figure>
       <figure class="demo-card">
-        <video controls playsinline preload="none" poster="/media/unicode-gate-poster.jpg"
+        <video controls playsinline preload="none" poster="/media/unicode-gate-poster.webp"
           aria-label="Unicode paste gate, EPOCHÉ suspension, and reset demonstration"
           aria-describedby="gate-caption">
           <source src="/media/unicode-gate.mp4" type="video/mp4">
@@ -418,7 +398,7 @@ footer.site a:hover,footer.site a:focus-visible{color:var(--cinnabar-deep);}
           <a href="/media/unicode-gate.vtt">Read the captions</a>.</figcaption>
       </figure>
       <figure class="demo-card">
-        <video controls playsinline preload="none" poster="/media/compile-and-audit-poster.jpg"
+        <video controls playsinline preload="none" poster="/media/compile-and-audit-poster.webp"
           aria-label="Project compilation, review mode, portable output, and integrity telemetry demonstration"
           aria-describedby="compile-caption">
           <source src="/media/compile-and-audit.mp4" type="video/mp4">
@@ -439,19 +419,25 @@ footer.site a:hover,footer.site a:focus-visible{color:var(--cinnabar-deep);}
   <div class="wrap">
     <span class="eyebrow reveal d1">Get the compiler</span>
     <h2 class="reveal d2">Write it once.<br/>Know when to stop.</h2>
-    <p class="reveal d3">Stele is the standing record of how your work should be done —
-    inscribed by you, compiled for the model, carried wherever you go next.</p>
+    <p class="reveal d3">STELE is the standing record of how your work should be done:
+    inscribed by you, compiled for the session, kept in your hands.</p>
     <div class="cta-row reveal d4" style="justify-content:center;">
       <a class="btn btn-primary" href="/app/">Compile your directive</a>
-      <a class="btn btn-ghost" href="https://github.com/mazze93/stele">Read the spec</a>
+      <a class="btn btn-ghost" href="https://github.com/mazze93/stele">Read the source</a>
     </div>
+    <p class="data-note reveal d5">The hosted app keeps its audit trail in your browser and also
+    sends audit events (state changes, which checks fired, which fields were extracted) to
+    STELE’s audit ledger. It never sends your pasted text there. Model calls go from your
+    browser to Anthropic with your own API key.</p>
   </div>
 </section>
+
+</main>
 
 <div class="wrap">
   <footer class="site">
     <span>STELE · the directive compiler · integrity by design</span>
-    <span><a href="https://github.com/mazze93/stele">Project source</a> · <a href="https://github.com/mazze93/stele">GitHub</a> · built on React 19 + Vite</span>
+    <span><a href="https://github.com/mazze93/stele">Source on GitHub</a> · app built with React 19 and Vite</span>
   </footer>
 </div>
 
