@@ -476,11 +476,30 @@ function compileProjectMD(state: DirectiveState, projects: Project[]): string {
 // ── main export ───────────────────────────────────────────────────────────────
 export function compile(state: DirectiveState): string {
   const projects = getActiveProjects(state.activeProjectIds)
-  switch (state.outputTarget) {
-    case 'claude-ai':         return compileClaudeAI(state, projects)
-    case 'claude-md-global':  return compileGlobalMD(state, projects)
-    case 'claude-md-project': return compileProjectMD(state, projects)
+  const compiled = {
+    'claude-ai': compileClaudeAI,
+    'claude-md-global': compileGlobalMD,
+    'claude-md-project': compileProjectMD,
+  }[state.outputTarget](state, projects)
+  if (state.integrityState === 'EPOCHÉ') return compiled
+  const context: string[] = []
+  const integrationIds = ['directive-remixer', 'stratum', 'aletheia', 'apatea', 'temenos', 'adaptive-response']
+  if (projects.some(project => integrationIds.includes(project.id))) {
+    context.push('Authority context — Stratum ADR-003 and tor-reference incident',
+      'Ledger authorship, checked execution evidence and human ratification have distinct authority conditions. A shared bearer credential, client-supplied identity, projected axiomatic tier or machine-accessible Git signature alone cannot establish human approval.',
+      'Consult https://github.com/mazze93/stratum/blob/main/docs/ADR-003-trust-primitives.md and tor-reference log entry dec-mu5mtytb-251a for the recorded contract and incident. The blue-marked incident head is intentionally preserved.', '')
   }
+  for (const project of projects) {
+    const observation = project.observation
+    if (observation) {
+      context.push(`Catalog observation — ${project.label}`, `${observation.repository} @ ${observation.commit}`, `Observed ${observation.observedAt}. Repository metadata records source identity; project policy remains authored.`, '')
+    }
+    if (state.outputTarget !== 'claude-md-project') {
+      const narrative = state.projectNarratives[project.id]
+      if (narrative) context.push(`Reviewed session narrative — ${project.label}`, ...Object.values(narrative).filter(Boolean), '')
+    }
+  }
+  return context.length ? `${compiled}\n\n${context.join('\n').trimEnd()}` : compiled
 }
 
 export function wordCount(text: string): number {
