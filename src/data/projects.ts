@@ -1,6 +1,8 @@
 import type { Project } from '@/lib/types'
+import observations from './project-observations.json'
+import { parseProjectObservations } from '@/lib/project-observations'
 
-export const PROJECTS: Project[] = [
+const AUTHORED_PROJECTS: Project[] = [
   {
     id: 'secure-pride', label: 'Secure Pride', scope: 'SP',
     // Corrected 2026-09-11: the prior stack line (FreeRADIUS/step-ca/Mosyle/
@@ -39,7 +41,7 @@ export const PROJECTS: Project[] = [
       'Signal & Cost essay: three structural questions unresolved from The Signal session',
     ],
     tesserae: [],
-    root: '~/dev/mazzeleczzare.com',
+    root: '~/Projects/blog/mazze-leczzare-blog',
   },
   {
     id: 'merchants-of-war', label: 'Merchants of War', scope: 'MOW',
@@ -64,7 +66,7 @@ export const PROJECTS: Project[] = [
       'Affect vector integration: sync vs. async update behavior and Lighthouse pinning implications',
     ],
     tesserae: [],
-    root: '~/dev/context-synapse',
+    root: '~/Projects/cognitive/context-synapse',
   },
   {
     id: 'thesis-pipeline', label: 'Thesis Pipeline', scope: 'TP',
@@ -110,7 +112,7 @@ export const PROJECTS: Project[] = [
     ],
     openQuestions: [],
     tesserae: [],
-    root: '~/dev/stele',
+    root: '~/Projects/tools/stele',
     // Narrative fields — authored from session context
     identity: 'STELE is a directive compiler and integrity telemetry tool. It compiles project configuration into egregores — governed Claude instruction sets that carry compliance posture, hard stops, design language, and ritual self-regulation language. The output of STELE governs future Claude behavior in sessions. The tool is the stele. Its output is the egregore.',
     philosophy: 'Intentional fragility over impermeability. The system is built to fail early, visibly, and informatively. Each TOBIRA activation is a diagnostic about the attacker — the failure carries information the way a honeypot does. EPOCHÉ is not defeat; it is the system making a philosophical choice to suspend its own operation because it cannot trust its own perception. Stopping under suspected compromise is the highest-value action available.',
@@ -118,6 +120,21 @@ export const PROJECTS: Project[] = [
     unstatedConstraints: 'The lexicon is load-bearing security infrastructure. Deviation from ZANSHIN/UNHEIMLICH/WABI/EPOCHÉ vocabulary in compiled output strings or audit codes is itself a TOBIRA signal — it indicates the system is producing language outside its known register. CSS variables must be referenced by name in all component code because hardcoded hex values would break theme switching and signal a developer unfamiliar with the system. The coupling matrix in UtsuroiPanel is computed from real Jaccard vocabulary overlap — it is not decorative, it is a diagnostic showing which modules fire in correlated conditions.',
   },
 ]
+
+// Repository observations describe a revision. Posture and hard stops stay authored.
+const observed = parseProjectObservations(JSON.stringify(observations))
+const integrationProjects: Project[] = [
+  { id: 'stratum', label: 'Stratum', scope: 'ST', stack: 'TypeScript · Python oracle · Cloudflare Workers', posture: 'MAX', root: '~/Projects/cognitive/stratum' },
+  { id: 'aletheia', label: 'Aletheia', scope: 'AL', stack: 'Python · provenance-aware input gate', posture: 'GUARDIAN', root: '~/Projects/tools/aletheia' },
+  { id: 'apatea', label: 'Apatea', scope: 'AP', stack: 'Python · adversarial invariant search', posture: 'RESEARCH', root: '~/Projects/tools/apatea' },
+  { id: 'temenos', label: 'Temenos', scope: 'TM', stack: 'Python · evidence-gated runtime', posture: 'GUARDIAN', root: 'https://github.com/mazze93/temenos' },
+  { id: 'adaptive-response', label: 'Adaptive Response', scope: 'AR', stack: 'TypeScript · Cloudflare Workers · Zod · React', posture: 'HIGH', root: '~/Projects/tools/adaptive-response' },
+].map(project => ({ ...project, posture: project.posture as Project['posture'], compliance: [], hardStops: [], openQuestions: [], tesserae: [] }))
+
+export const PROJECTS: Project[] = [...AUTHORED_PROJECTS, ...integrationProjects].map(project => ({
+  ...project,
+  observation: observed.find(item => item.projectId === project.id),
+}))
 
 export const POSTURE_META: Record<string, { color: string; label: string; description: string }> = {
   GUARDIAN: { color: '#7b52ab', label: 'GUARDIAN', description: 'Security-first. Adversarial input hardening. Lexicon integrity enforced. Build sequencing is governance.' },
