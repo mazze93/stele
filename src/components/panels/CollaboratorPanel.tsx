@@ -173,6 +173,13 @@ function ModelCollaboratorPanel({
       buildSequencing:     fields.buildSequencing,
       unstatedConstraints: fields.unstatedConstraints,
     }
+    const result = gate(JSON.stringify(narrative))
+    setGateResult(result)
+    onGateResult(result)
+    if (result.blocked) {
+      setStatus('blocked')
+      return
+    }
     onApplyNarrative(selectedId, narrative)
     onAuditEntry('tsugi-applied', { fieldsExtracted: ['identity', 'philosophy', 'buildSequencing', 'unstatedConstraints'] })
     setStatus('applied')
