@@ -58,7 +58,7 @@ export function ProjectObservationPanel({ state, onApply, onGateResult }: Props)
     if (!project) return
     const current = state.projectNarratives[selected.projectId]
     onApply(project.id, {
-      identity: `${draft}\n\nRepository description observed ${selected.observedAt} at https://github.com/${selected.repository}/tree/${selected.commit}. Developer-reviewed session draft.`,
+      identity: `${draft}\n\nRepository description observed ${selected.observedAt} at https://github.com/${selected.repository}/tree/${selected.commit}. Session-applied identity draft.`,
       philosophy: current?.philosophy ?? project.philosophy ?? '',
       buildSequencing: current?.buildSequencing ?? project.buildSequencing ?? '',
       unstatedConstraints: current?.unstatedConstraints ?? project.unstatedConstraints ?? '',
