@@ -249,13 +249,10 @@ workflow.
 
 ## OPEN QUESTIONS
 
-- **User mode fork UI** — still open, and the shape of the gap is now known.
-  `state.userModes` is *read* in three places (`LeftRail.tsx:44,55`,
-  `MobileConfig.tsx:38,48`) and merged by `findMode()` (`modes.ts:44`), but
-  nothing writes it: there is no create/fork surface anywhere in the UI, so the
-  array is permanently `[]` in practice. `userModes` is also on the extractor's
-  forbidden-field list, which is correct and must stay — whatever UI gets built,
-  modes are authored by the operator, never by extraction.
+- **User mode fork UI — resolved.** The Modes panel creates, edits, selects,
+  deletes and exports operator-authored session modes. Built-ins remain protected;
+  automated extraction still cannot write `userModes`. Reset/tab close clears
+  these session-only modes; the UI states this before authoring.
 
 - **`projectNarratives` persistence — resolved, and the answer is "session-only."**
   Not an open question any more. `narrativeExport.ts` is imported only by

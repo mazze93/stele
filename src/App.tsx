@@ -22,6 +22,8 @@ import { LeverPanel } from '@/components/LeverPanel'
 import { OutputPanel } from '@/components/OutputPanel'
 import { EpocheLockout } from '@/components/EpocheLockout'
 import { MobileConfig } from '@/components/MobileConfig'
+import { findMode } from '@/data/modes'
+import { STELE_VERSION } from '@/lib/version'
 import './App.css'
 
 
@@ -50,7 +52,7 @@ export default function App() {
   // the real one. The ref (inside the queue) remains the write path; this is
   // the read path, updated by `publish()` after every completed write.
   const [auditTrail, setAuditTrail] = useState<AuditTrail>(session.audit)
-  const isMobile         = useIsMobile()
+  const isMobile         = useIsMobile(1100)
   const integrity        = INTEGRITY_STATES[state.integrityState as IntegrityState]
   const sessionStarted   = useRef(false)
   // All audit writes go through one queue. Two writers that each read the
@@ -186,7 +188,7 @@ export default function App() {
     <div style={{ display:'flex', flexDirection:'column', height:'100dvh', background:'var(--cipher)', color:'var(--vellum)', overflow:'hidden' }}>
       <header style={{ height:'48px', flexShrink:0, display:'flex', alignItems:'center', padding:'0 16px', gap:'12px', borderBottom:'1px solid var(--border-color)', background:'var(--cipher)', zIndex:20 }}>
         <span style={{ fontFamily:'var(--heading-font)', fontSize:'15px', fontWeight:500, letterSpacing:'0.06em', color:'var(--vellum)', whiteSpace:'nowrap' }}>STELE</span>
-        {!isMobile && <span style={{ fontFamily:'var(--mono-font)', fontSize:'9px', color:'var(--vellum-faint)', letterSpacing:'0.08em' }}>egregore compiler · mazze · 2026</span>}
+        {!isMobile && <span style={{ fontFamily:'var(--mono-font)', fontSize:'9px', color:'var(--vellum-faint)', letterSpacing:'0.08em' }}>egregore compiler · v{STELE_VERSION}</span>}
         <div style={{ flex:1 }} />
         {/* Integrity strip — always visible */}
         <div style={{ display:'flex', alignItems:'center', gap:'8px', padding:'4px 10px', border:`1px solid ${integrity.color}`, borderRadius:'3px', background:integrity.colorDim }}>
@@ -243,7 +245,7 @@ function StatusChips({ state }: { state: DirectiveState }) {
   const total   = state.outputSections.length
   return (
     <div style={{ display:'flex', gap:'8px', alignItems:'center' }}>
-      <Chip label={`[${state.sessionMode}]`}          color="var(--gold)" />
+      <Chip label={`[${findMode(state.sessionMode, state.userModes)?.label ?? state.sessionMode}]`}          color="var(--gold)" />
       <Chip label={state.verbosity}                    color="var(--vellum-dim)" />
       <Chip label={`${enabled}/${total} sections`}     color="var(--vellum-faint)" />
       {state.openQuestions.length > 0 && <Chip label={`${state.openQuestions.length} open`} color="var(--teal-bright)" />}
