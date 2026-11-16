@@ -108,25 +108,8 @@ export const PROJECTS: Project[] = [
       'escalate() called without scanInput() having run first',
       'CSS hex values hardcoded in component code — use CSS vars only',
     ],
-    openQuestions: [
-      'Should the tesserae field on Project be required or optional? compiler.ts uses optional chain but type declares required. (T-010)',
-      'bundle.html: vite-plugin-singlefile not yet wired — is single-file output a release requirement?',
-      'User mode fork UI: state.userModes exists but there is no create/fork surface in the UI yet.',
-    ],
-    tesserae: [
-      {
-        id: 'T-009',
-        module: 'audit.ts appendEntry() — SHA-256 hash chain (RESOLVED)',
-        missingHalf: 'resolved: appendEntry() now uses crypto.subtle SHA-256 over prevHash|action|content|sessionId|timestamp; verifyChain() validates full chain integrity',
-        group: 2,
-      },
-      {
-        id: 'T-010',
-        module: 'tesserae field in src/lib/types.ts Project type',
-        missingHalf: 'declared Tessera[] (required) but compiler.ts uses tesserae?.length — resolve: mark optional or remove optional chain',
-        group: 1,
-      },
-    ],
+    openQuestions: [],
+    tesserae: [],
     root: '~/dev/stele',
     // Narrative fields — authored from session context
     identity: 'STELE is a directive compiler and integrity telemetry tool. It compiles project configuration into egregores — governed Claude instruction sets that carry compliance posture, hard stops, design language, and ritual self-regulation language. The output of STELE governs future Claude behavior in sessions. The tool is the stele. Its output is the egregore.',

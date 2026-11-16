@@ -1,0 +1,64 @@
+name: site
+
+# Lab check of the landing page (site/public) on every change to it:
+# Lighthouse mobile and desktop for the base branch and this branch, plus
+# screenshots at phone and desktop widths. Results land in the job summary and
+# as a downloadable artifact. Lab numbers from a local static server; they do
+# not include Cloudflare's edge (compression, Rocket Loader, analytics beacon).
+on:
+  pull_request:
+    paths:
+      - 'site/**'
+      - '.github/workflows/site.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  lighthouse:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: 24
+      - name: Check out the base revision beside this one
+        env:
+          BASE: ${{ github.event.pull_request.base.sha || 'origin/main' }}
+        run: git worktree add --detach "$RUNNER_TEMP/base" "$BASE"
+      - name: Serve base on :8001 and this branch on :8002
+        run: |
+          (cd "$RUNNER_TEMP/base/site/public" && python3 -m http.server 8001 >/dev/null 2>&1 &)
+          (cd site/public && python3 -m http.server 8002 >/dev/null 2>&1 &)
+          for port in 8001 8002; do
+            for _ in $(seq 1 20); do curl -sf "http://127.0.0.1:$port/" >/dev/null && break; sleep 0.5; done
+          done
+      - name: Lighthouse and screenshots
+        run: |
+          mkdir -p lh
+          for run in base:8001 branch:8002; do
+            label=${run%%:*}; port=${run##*:}; url="http://127.0.0.1:$port/"
+            npx -y lighthouse@13.6.0 "$url" --quiet --output=json --output-path="lh/$label-mobile.json" \
+              --chrome-flags="--headless=new --no-sandbox"
+            npx -y lighthouse@13.6.0 "$url" --quiet --preset=desktop --output=json --output-path="lh/$label-desktop.json" \
+              --chrome-flags="--headless=new --no-sandbox"
+            google-chrome --headless=new --no-sandbox --hide-scrollbars --window-size=390,844 \
+              --screenshot="lh/$label-390.png" "$url"
+            google-chrome --headless=new --no-sandbox --hide-scrollbars --window-size=1440,900 \
+              --screenshot="lh/$label-1440.png" "$url"
+          done
+      - name: Summary
+        run: |
+          {
+            echo '### Landing page, lab run (base vs this branch)'
+            node site/lighthouse-summary.mjs \
+              base-mobile=lh/base-mobile.json branch-mobile=lh/branch-mobile.json \
+              base-desktop=lh/base-desktop.json branch-desktop=lh/branch-desktop.json
+          } | tee -a "$GITHUB_STEP_SUMMARY"
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: site-lighthouse
+          path: lh/

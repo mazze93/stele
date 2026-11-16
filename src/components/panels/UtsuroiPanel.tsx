@@ -1,3 +1,4 @@
+import { AuditControls } from '../AuditControls'
 import { useState, useMemo } from 'react'
 import type { IntegrityState } from '@/lib/integrity'
 import { INTEGRITY_STATES } from '@/lib/integrity'
@@ -32,10 +33,11 @@ export function UtsuroiPanel({ state, integrityState, firedTobiraIds, auditTrail
     return { background:`hsla(${hue},80%,45%,${Math.min(Math.max(0.04,score*(rFired&&cFired?1.2:1)),0.95)})`, border:isActive?`1px solid ${integrity.color}`:'1px solid rgba(255,255,255,0.04)' }
   }
 
-  const interpret = (s: number) => s>=0.6 ? 'High co-compromise risk. These modules share vocabulary and can be triggered by the same adversarial pattern.' : s>=0.3 ? 'Moderate overlap. Co-firing is possible under sophisticated input.' : 'Low coupling. Orthogonal detection domains. Independent failure modes.'
+  const interpret = (s: number) => s>=0.6 ? 'High vocabulary overlap. Co-firing is possible; this score does not measure security risk.' : s>=0.3 ? 'Moderate overlap. Co-firing is possible under sophisticated input.' : 'Low vocabulary overlap. This does not establish independent detection behavior.'
 
   return (
     <div style={{ display:'flex', flexDirection:'column', gap:'20px' }}>
+      <AuditControls trail={auditTrail} integrityState={integrityState} />
       {/* State banner */}
       <div style={{ padding:'14px 16px', background:integrity.colorDim, border:`1px solid ${integrity.color}`, borderRadius:'4px', display:'flex', alignItems:'center', gap:'16px' }}>
         <span style={{ fontSize:'28px', lineHeight:1, fontFamily:'serif', color:integrity.color }}>{integrity.glyph}</span>
@@ -47,9 +49,9 @@ export function UtsuroiPanel({ state, integrityState, firedTobiraIds, auditTrail
           <span style={{ fontFamily:'var(--mono-font)', fontSize:'10px', color:'var(--vellum-dim)' }}>{integrity.description}</span>
         </div>
         <div style={{ display:'flex', gap:'8px' }}>
-          {(['allowsExtraction','allowsApiCalls','allowsStateWrites'] as const).map(c => (
+          {(['allowsExtraction','allowsApiCalls','allowsStateWrites','allowsPatchApplication'] as const).map(c => (
             <div key={c} style={{ display:'flex', flexDirection:'column', alignItems:'center', gap:'3px' }}>
-              <span style={{ fontFamily:'var(--mono-font)', fontSize:'9px', color:integrity[c]?'#4db8c4':'#c85080' }}>{integrity[c]?'✓':'✗'}</span>
+              <span style={{ fontFamily:'var(--mono-font)', fontSize:'9px', color:integrity[c]?'var(--teal-bright)':'var(--coral)' }}>{integrity[c]?'✓':'✗'}</span>
               <span style={{ fontFamily:'var(--mono-font)', fontSize:'7px', color:'var(--vellum-faint)', whiteSpace:'nowrap' }}>{c.replace('allows','')}</span>
             </div>
           ))}
@@ -57,7 +59,7 @@ export function UtsuroiPanel({ state, integrityState, firedTobiraIds, auditTrail
       </div>
 
       {/* Coupling matrix + detail */}
-      <div style={{ display:'grid', gridTemplateColumns:'1fr 240px', gap:'12px' }}>
+      <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fit,minmax(min(100%,240px),1fr))', gap:'12px' }}>
         <div style={{ background:'var(--surface)', border:'1px solid var(--border-color)', borderRadius:'4px', padding:'14px', overflowX:'auto' }}>
           <p style={sHead}>COUPLING MATRIX — TOBIRA resonance · Jaccard vocabulary overlap</p>
           <div style={{ minWidth:'max-content', marginTop:'10px' }}>
@@ -100,7 +102,7 @@ export function UtsuroiPanel({ state, integrityState, firedTobiraIds, auditTrail
           {!active ? (
             <div style={{ flex:1, display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', border:'1px dashed var(--border-color)', borderRadius:'3px', padding:'20px', textAlign:'center', gap:'8px' }}>
               <span style={{ fontSize:'20px', opacity:0.2 }}>歪</span>
-              <span style={{ fontFamily:'var(--mono-font)', fontSize:'9px', color:'var(--vellum-faint)', lineHeight:1.6 }}>Select a cell to analyze module coupling and co-compromise vectors.</span>
+              <span style={{ fontFamily:'var(--mono-font)', fontSize:'9px', color:'var(--vellum-faint)', lineHeight:1.6 }}>Select a cell to inspect vocabulary overlap. This is a lexical diagnostic, not a probability of detection.</span>
             </div>
           ) : (
             <>

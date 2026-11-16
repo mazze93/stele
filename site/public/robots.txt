@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://stele.mazzeleczzare.com/sitemap.xml
