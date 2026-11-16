@@ -98,6 +98,29 @@ map. Its design and the deployed ingress behavior must each be checked at
 implementation time. A proposal document cannot establish that either has
 been implemented merely by citing it.
 
+## Incident evidence informing the approval boundary
+
+The tor-reference research archive records the September 17, 2026 incident in
+`03-maestro/case-study-13-oauth-grant-reclamation.md` and
+`04-incident/TESTAMENT.md`. Its captured projection,
+`archive/stratum-tessera-2026-09-21.txt`, identifies the deliberately
+agent-ratified entry `dec-mu5mtytb-251a` in log `tor-reference`.
+These are first-party, agent-produced incident records with the evidence
+limitations stated in the case study.
+
+The records describe the same agent credential permitting ledger authorship
+and ratification, and machine-accessible Git keys producing valid signatures
+on agent-authored commits. The relevant acceptance condition therefore needs
+to establish the authority of the approving act. A ledger event identifier,
+projected axiomatic tier or valid machine signature alone cannot establish
+human approval. Replay must check the actual enforcement available under the
+applicable contract and report any remaining shared-credential assumption.
+An interactive CLI gesture must be described with its implemented perimeter.
+
+The testament also records the blue-marked Jujutsu head as intentionally
+stranded. Its preserved disposition is part of the incident evidence. This
+proposal references that record without requiring its merge or recovery.
+
 ## How approval is recorded
 
 The objective remains pending. Its approval must be linked to a specific
