@@ -58,11 +58,12 @@
   "scope": "Bounded lexical policy over this fixed perimeter only. No claim of universal prompt-injection closure, resistance to semantic paraphrase, UI reachability, or the behavior of transformations outside the three listed.",
   "changeRule": "Any change to pins, perimeter, witnesses, controls or composition is a new objective version and needs a new approval.",
   "approvalRecord": {
-    "method": "SSH-signed git tag made by the maintainer on their own machine",
-    "tag": "pairing-objective-v1-approved",
-    "approvedProposalSha256": "<SHA-256 of this proposal file's bytes at the proposal commit, copied into objective.json after approval>",
-    "proposalCommit": "<the commit the tag points at>",
-    "signerKeyFingerprint": "<maintainer's SSH signing key, cross-checked against the public GitHub signing keys for mazze93>",
-    "attestation": "Valid only if the tag signature verifies against a key the maintainer holds outside any agent session. An agent-written record of approval is not approval."
+    "method": "Stratum decision under its applicable authority contract",
+    "ledger": "<ledger identity containing the approval decision>",
+    "eventId": "<approval decision event identifier>",
+    "contractVersion": "<contract version governing the approval event>",
+    "approvedProposalSha256": "<SHA-256 of proposal-file bytes at proposalCommit>",
+    "proposalCommit": "<full commit containing the proposal bytes>",
+    "attestation": "Replay must derive the accepted authority state from the Stratum record and compare all governing objective fields with the proposal at proposalCommit. Approval remains pending until that binding is checked."
   }
 }

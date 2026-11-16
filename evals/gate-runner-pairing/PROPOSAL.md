@@ -2,7 +2,7 @@
 
 Status: **pending approval**. Nothing in this directory is an approved
 objective yet, and no check may depend on `objective.proposed.json` until the
-maintainer has signed the approval tag described below.
+approval has been recorded and checked under the contract described below.
 
 This applies the method of `evals/assurance-integrity/` (#114) to the
 three-repo pairing that CI runs as `gate-runner-pairing` (repinned in #116):
@@ -70,55 +70,65 @@ Unicode-adjacency variant of any atom lowers its score or changes its extent.
   universal prompt-injection closure, paraphrase resistance, UI reachability,
   or transformations outside the three listed.
 
+## Existing integration and authority contracts
+
+STELE's [ADR-0005](../../docs/adr/0005-ecosystem-position.md) records the
+integration direction and sequence through the integrity envelope, Stratum and
+adaptive-response, then a shared CLI and plugin identity. ADR-0004 identifies
+adaptive-response as a candidate home for the model-facing tier. The pairing
+objective supplies bounded evidence about the gate and runner within that
+architecture. Its implementation must preserve the consumer's policy role and
+STELE's integrity-state capability semantics.
+
+The governing Stratum records are maintained in
+[mazze93/stratum](https://github.com/mazze93/stratum).
+
+- `data/stele-trace.jsonl`, `st-000`, records the mandate that all STELE
+  decisions route through Stratum.
+- `docs/MEMORY_MODEL.md` defines authority tiers and status projection.
+- `docs/ADR-003-trust-primitives.md`, sections 3–5 and 7, defines bound
+  evidence, the authority-registry design, namespace-bound SSHSIG and
+  version-preserving projection. `data/trust-trace.jsonl` preserves the
+  decisions and their projected status.
+- `docs/API.md` and `cli/lib/ingress.mjs` define the automated ingress path,
+  reproducible evidence capture and interactive ratification gesture.
+
+ADR-003's authority registry is recorded as unfinished R4 in Stratum's tracks
+map. Its design and the deployed ingress behavior must each be checked at
+implementation time. A proposal document cannot establish that either has
+been implemented merely by citing it.
+
 ## How approval is recorded
 
-#114's approval was transcribed into `objective.json` by the agent that wrote
-the code, and its README says so: it is not evidence of human approval. This
-brick closes that gap rather than repeating it.
+The objective remains pending. Its approval must be linked to a specific
+Stratum decision and the authority contract in force for that event. The
+implementation must retain the event identifier, ledger identity, contract
+version, proposal commit and exact proposal-file SHA-256. It must derive the
+applicable status and authority tier from the record and preserve the
+separation between ratification and checked execution evidence.
 
-Approval is an SSH-signed git tag that the maintainer makes on their own
-machine, pointing at the commit that adds this proposal. No agent session
-holds that key. The replay checker will accept the objective only if:
+The earlier standalone Git-tag ceremony is withdrawn from this proposal.
+GitHub account signing-key lookup and a Git signature alone cannot establish
+the authority conditions specified by Stratum. Any Git tag retained as a
+content locator must be bound to the same proposal commit and digest, with
+its role stated in the approval record.
 
-1. tag `pairing-objective-v1-approved` exists and points at the proposal
-   commit;
-2. its signature verifies with `git verify-tag`;
-3. the signing key's fingerprint matches one of the public SSH signing keys
-   GitHub lists for `mazze93`, fetched by the checker at run time rather than
-   read from the checkout;
-4. the SHA-256 of `objective.proposed.json` at that commit equals the
-   `approvedProposalSha256` in the final `objective.json`.
+Before enabling enforcement, the implementation must specify and test the
+accepted Stratum authority state using the existing contract. If that path
+depends on unfinished R4 work, record the dependency explicitly and keep the
+objective pending. Changes to that contract belong in Stratum's decision
+process.
 
-GitHub's own "Verified" badge does not count: squash merges are signed by
-GitHub's web-flow key whoever presses the button, including an agent holding
-the maintainer's token.
-
-### Maintainer steps (once the proposal reads right)
-
-One-time, if commits are not already SSH-signed on this machine:
-
-```sh
-git config --global gpg.format ssh
-git config --global user.signingkey ~/.ssh/id_ed25519.pub
-```
-
-Add the same public key on GitHub as a **Signing key** (Settings, SSH and GPG
-keys, New SSH key, key type Signing Key). Then, from the Stele checkout:
-
-```sh
-git fetch origin brick/pairing-objective
-git tag -s pairing-objective-v1-approved <proposal-commit> \
-  -m "Approve stele-gate-runner-pairing-v1 as proposed"
-git verify-tag pairing-objective-v1-approved
-git push origin pairing-objective-v1-approved
-```
-
-`<proposal-commit>` is the commit on `brick/pairing-objective` that adds this
-file; the draft PR names it.
+Replay must retrieve the proposal bytes at the recorded commit, verify their
+digest and compare every governing field of the executable objective with
+that proposal. Copying an approved digest into a different objective is
+insufficient. Pins, atoms, transformations, counts, witnesses, controls,
+composition and scope all participate in that comparison. Approval-record
+metadata must have an explicit schema so it cannot override those fields.
 
 ## What gets built after approval
 
-Same structure as `evals/assurance-integrity/`, in a new
+Extend the structure of `evals/assurance-integrity/` within
 `evals/gate-runner-pairing/`:
 
 - `run.mjs`: drives six cases against the real gate and records evidence with
@@ -131,13 +141,21 @@ Same structure as `evals/assurance-integrity/`, in a new
   Aletheia composition.
 - `replay.mjs`: a separate implementation, fresh process, fresh copy. It reads
   the approved objective and the gate, never `pairing.py`'s atom list or the
-  bridge's rank map, and verifies the approval tag as above.
+  bridge's rank map, and verifies the Stratum approval binding described above.
 - A CI step in `gate-runner-pairing` that runs both.
+- Evidence capture through Stratum's existing ingress, binding the observed
+  run to the repository commit and deterministic inputs and outputs. Evidence
+  records must identify both gate and runner revisions.
+- Negative checks for altered objective fields with an unchanged approval
+  digest, missing approval records and authority states outside the explicitly
+  accepted contract. Establish a passing baseline on main before requiring the
+  check through GitHub protection.
 
 ## Limits
 
 The checker still runs inside CI that a PR can edit, so on its own it is
 regression evidence, not an enforced GitHub boundary; making it one needs a
 required status check whose workflow lives outside the PR's reach (for example
-a ruleset requiring a workflow from a protected branch). The signed tag
-anchors who approved the objective; it does not anchor the verifier code.
+a ruleset requiring a workflow from a protected branch). The approval binding
+must identify the objective bytes and authority record.
+Verifier-code provenance remains a separate enforcement dependency.
