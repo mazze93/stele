@@ -221,7 +221,7 @@ function compileClaudeAI(state: DirectiveState, projects: Project[]): string {
   const sections = state.outputSections.filter(s => s.enabled)
   if (sections.length > 0) {
     const modeData = findMode(mode, state.userModes ?? [])
-    lines.push(`OUTPUT FORMAT [${mode}] — ${modeData?.description ?? SESSION_PRESETS[mode]?.description ?? ''}`)
+    lines.push(`OUTPUT FORMAT [${modeData?.label ?? mode}] — ${modeData?.description ?? SESSION_PRESETS[mode]?.description ?? ''}`)
     lines.push(sections.map((s,i) => `${i+1}. ${s.label}`).join(' · '))
     lines.push("Omit sections that don't apply. Never pad.")
     lines.push('')
