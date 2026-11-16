@@ -54,6 +54,7 @@ const cases = [
   { id: 'impossible-original', bypass: 'Attempt all-state extraction prohibition; ZANSHIN is a counterexample.', claim: 'all-deny', expected: 'KIRI' },
   { id: 'impossible-weakened', bypass: 'Replace impossible all-state theorem with suspended-only theorem.', original: 'all-deny', expected: 'KIRI' },
   { id: 'vacuous-precondition', bypass: 'Set scope to empty; implication remains trivially true.', empty: true, expected: 'KIRI' },
+  { id: 'empty-scope-dependency', bypass: 'Empty imported scope without changing statement or permissions.', scopeEmpty: true, expected: 'KIRI' },
   { id: 'transitive-weakening', bypass: 'Change imported scope to follow permissions and enable EPOCHÉ extraction; proof module stays byte-identical.', transitive: true, expected: 'KIRI' },
 ]
 const results = []
@@ -68,6 +69,7 @@ for (const task of cases) {
   if (task.comment) candidate['integrity.ts'] += '\n// Assurance experiment: semantics preserved.\n'
   if (task.original) candidate['claim.json'] = JSON.stringify({ claim: 'suspended-deny', precondition: 'suspended' }, null, 2) + '\n'
   if (task.empty) candidate['claim.json'] = JSON.stringify({ claim: original.claim, precondition: 'empty' }, null, 2) + '\n'
+  if (task.scopeEmpty) candidate['scope.mjs'] = 'export const inScope = state => false\n'
   if (task.transitive) {
     candidate['integrity.ts'] = enableEpoche(source)
     candidate['scope.mjs'] = precondition.replace("state === 'WABI' || state === 'EPOCHÉ'", '!INTEGRITY_STATES[state].allowsExtraction')
@@ -121,19 +123,18 @@ for (const task of cases) {
   const decision = Object.values(gates).every(Boolean) ? 'ZANSHIN' : 'KIRI'
   json(join(dir, 'gatekeeper.json'), { gates, decision, dependencyChanged, baselineProof, baselineCounterexamples, mutations,
     dependencyPolicy: 'Changed bytes recorded; semantic acceptance requires trusted baseline, witnesses, and activated mutations.' })
-  const replayDir = mkdtempSync(join(tmpdir(), 'stele-replay-'))
-  let replay
-  try {
-    cpSync(candidateDir, replayDir, { recursive: true })
-    const run = spawnSync(process.execPath, [join(here, 'replay.mjs'), join(dir, 'original-specification.json'), replayDir],
-      { encoding: 'utf8', timeout: 10000 })
-    assert.equal(run.status, 0, run.stderr)
-    replay = JSON.parse(run.stdout)
-  } finally { rmSync(replayDir, { recursive: true, force: true }) }
+  // The trusted caller holds this digest, rather than reading a pin beside mutable inputs.
+  const snapshot = JSON.stringify({ specification: original, files: candidate }, null, 2) + '\n'
+  writeEvidence(join(dir, 'replay-input.json'), snapshot)
+  const replayPin = sha(snapshot)
+  const replayRun = spawnSync(process.execPath, [join(here, 'replay.mjs'), join(dir, 'replay-input.json'), replayPin],
+    { encoding: 'utf8', timeout: 10000 })
+  assert.equal(replayRun.status, 0, replayRun.stderr)
+  const replay = JSON.parse(replayRun.stdout)
   json(join(dir, 'independent-replay.json'), replay)
   assert.equal(decision, task.expected, task.id)
   assert.equal(replay.decision, task.expected, `${task.id} replay`)
-  results.push({ id: task.id, gates, decision, replay: replay.decision })
+  results.push({ id: task.id, gates, decision, replay: replay.decision, replayPin })
 }
 let revision = 'unavailable'
 try { revision = execFileSync('git', ['rev-parse', 'HEAD'], { cwd: root, encoding: 'utf8' }).trim() } catch { /* source-only archive */ }
