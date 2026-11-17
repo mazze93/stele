@@ -38,3 +38,46 @@ button:disabled{opacity:0.3!important;cursor:not-allowed!important}
 .epoche-reset:focus-visible{outline:3px solid var(--suspension-ink);outline-offset:5px;}
 .epoche-receipt{font:10px/1.8 var(--mono-font);overflow-wrap:anywhere;}
 @media(max-width:540px){.epoche-reason,.epoche-recovery{font-size:12px;}.epoche-observations li{display:block;font-size:12px;}.epoche-observations b{display:block;}.epoche-reset{width:100%;}}
+
+/* Session workspace: live capabilities and operator-owned controls. */
+.workspace-page{display:flex;flex-direction:column;gap:18px;max-width:980px;margin:0 auto;}
+.workspace-intro{padding:8px 0 12px;}
+.workspace-kicker{font:10px/1.7 var(--mono-font);letter-spacing:.12em;color:var(--teal-bright);margin-bottom:10px;}
+.workspace-intro h2{font:500 clamp(30px,3vw,46px)/1.1 var(--heading-font);letter-spacing:-.02em;margin-bottom:14px;color:var(--vellum);}
+.workspace-intro>p:last-child{font:12px/1.8 var(--mono-font);color:var(--vellum-dim);max-width:65ch;}
+.workspace-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px;}
+.workspace-card{background:var(--surface);border:1px solid var(--border-color);border-radius:6px;padding:20px;min-width:0;}
+.workspace-card h3{font:500 21px/1.35 var(--heading-font);color:var(--vellum);margin:0 0 10px;}
+.workspace-card p,.workspace-list{font:12px/1.8 var(--mono-font);color:var(--vellum-dim);}
+.workspace-card-heading{display:flex;align-items:baseline;gap:10px;justify-content:space-between;flex-wrap:wrap;}
+.workspace-tag{font:10px/1.6 var(--mono-font);color:var(--teal-bright);border:1px solid var(--border-color);padding:3px 8px;border-radius:3px;}
+.workspace-state{border-top:2px solid var(--teal-bright);}
+.workspace-capabilities{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin:18px 0;}
+.workspace-capabilities>div{display:flex;flex-direction:column;gap:4px;font:11px/1.6 var(--mono-font);color:var(--vellum-dim);}
+.workspace-capabilities strong{font-weight:400;color:var(--teal-bright);}
+.workspace-capabilities strong[data-allowed=false]{color:var(--coral);}
+.workspace-button{font:11px/1.5 var(--mono-font);color:var(--vellum);background:var(--surface-raised);border:1px solid var(--border-color);border-radius:4px;min-height:44px;padding:10px 14px;cursor:pointer;}
+.workspace-button[aria-pressed=true]{border-color:var(--teal-bright);color:var(--teal-bright);}
+.workspace-actions{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-top:14px;}
+.workspace-link{font:11px/1.7 var(--mono-font);color:var(--teal-bright);background:none;border:0;min-height:44px;padding:10px 0;cursor:pointer;text-align:left;}
+.workspace-card p.workspace-note,.workspace-note{font:10px/1.8 var(--mono-font);color:var(--vellum-dim);margin-top:12px;}
+.workspace-status{font:11px/1.7 var(--mono-font);color:var(--teal-bright);margin-top:12px;}
+.workspace-card details{margin-top:14px;}
+.workspace-card summary{font:12px/1.8 var(--mono-font);color:var(--vellum);cursor:pointer;min-height:44px;padding:10px 0;}
+.workspace-list{padding-left:18px;display:grid;gap:12px;margin:12px 0;}
+.workspace-form{display:grid;gap:16px;margin-top:16px;}
+.workspace-form label{display:grid;gap:7px;font:11px/1.7 var(--mono-font);color:var(--vellum-dim);}
+.workspace-form input,.workspace-form textarea,.workspace-form select{width:100%;min-height:44px;padding:10px;background:var(--cipher);color:var(--vellum);border:1px solid var(--border-color);border-radius:3px;font:12px/1.6 var(--mono-font);}
+.workspace-form textarea{resize:vertical;min-height:80px;}
+.workspace-form fieldset{border:1px solid var(--border-color);padding:14px;}
+.workspace-form legend{font:11px var(--mono-font);color:var(--vellum-dim);padding:0 6px;}
+.workspace-form label.workspace-checkbox{display:flex;align-items:center;gap:10px;min-height:44px;}
+.workspace-form input[type=checkbox]{width:18px;min-height:18px;accent-color:var(--teal);}
+.workspace-mode-list{display:grid;gap:10px;margin-top:14px;}
+.workspace-mode-list>div{display:flex;align-items:center;gap:12px;flex-wrap:wrap;}
+.workspace-mode-list .workspace-note{margin-top:0;flex:1;}
+.workspace-page :focus-visible{outline:2px solid var(--teal-bright);outline-offset:4px;}
+.lever-navigation{display:flex;gap:4px;flex-wrap:wrap;border-bottom:1px solid var(--border-color);padding:8px 16px;flex-shrink:0;}
+.lever-navigation button{min-height:44px;}
+@media(max-width:1100px){.workspace-grid{grid-template-columns:1fr;}}
+@media(max-width:540px){.workspace-card{padding:16px;}.workspace-intro h2{font-size:34px;}.lever-navigation{padding:6px 10px;}.workspace-capabilities{gap:14px;}}

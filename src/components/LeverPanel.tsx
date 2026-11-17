@@ -1,4 +1,6 @@
 import { useState } from 'react'
+import { SessionPanel } from './panels/SessionPanel'
+import { ModesPanel } from './panels/ModesPanel'
 import type { DirectiveState } from '@/lib/types'
 import type { ThemeId } from '@/data/themes'
 import type { IntegrityState } from '@/lib/integrity'
@@ -17,15 +19,17 @@ import { CollaboratorPanel } from './panels/CollaboratorPanel'
 
 type AuditExtras = Omit<Partial<AuditEntry>, 'integrityHash' | 'timestamp' | 'action' | 'sessionId'>
 
-type Tab = 'format' | 'governance' | 'questions' | 'append' | 'theme' | 'utsuroi' | 'inherit' | 'collaborator'
+type Tab = 'session' | 'modes' | 'format' | 'governance' | 'questions' | 'append' | 'theme' | 'utsuroi' | 'inherit' | 'collaborator'
 const TABS: { id: Tab; label: string }[] = [
+  { id:'session', label:'Session' },
+  { id:'modes', label:'Modes' },
   { id:'format',       label:'Format'       },
   { id:'governance',   label:'Governance'   },
   { id:'questions',    label:'Questions'    },
   { id:'append',       label:'Append'       },
   { id:'theme',        label:'Theme'        },
-  { id:'utsuroi',      label:'歪 UTSUROI'  },
-  { id:'inherit',      label:'Inherit'      },
+  { id:'utsuroi',      label:'Integrity · UTSUROI'  },
+  { id:'inherit',      label:'KOHAKU · Extract'      },
   { id:'collaborator', label:'Collaborator' },
 ]
 
@@ -46,7 +50,7 @@ export function LeverPanel({
   state, onChange, auditTrail, integrityState, apiKey, onSetApiKey,
   onGateResult, onApplyPatch, onApplyNarrative, onAuditEntry,
 }: Props) {
-  const [activeTab, setActiveTab] = useState<Tab>('format')
+  const [activeTab, setActiveTab] = useState<Tab>('session')
 
   const narrativeCount = state.activeProjectIds.filter(id => {
     const n = state.projectNarratives?.[id]
@@ -65,20 +69,22 @@ export function LeverPanel({
 
   return (
     <div style={{ flex:1, display:'flex', flexDirection:'column', minWidth:0 }}>
-      <div style={{ display:'flex', borderBottom:'1px solid var(--border-color)', padding:'0 16px', overflowX:'auto', flexShrink:0 }}>
+      <nav className="lever-navigation" aria-label="Session tools">
         {TABS.map(tab => {
           const active = activeTab === tab.id
           const badge  = badges[tab.id]
           return (
-            <button key={tab.id} onClick={() => setActiveTab(tab.id)}
+            <button key={tab.id} aria-current={active ? 'page' : undefined} onClick={() => setActiveTab(tab.id)}
               style={{ display:'flex', alignItems:'center', gap:'6px', padding:'12px 14px', flexShrink:0, background:'transparent', border:'none', borderBottom:`2px solid ${active?'var(--teal-bright)':'transparent'}`, cursor:'pointer', fontFamily:'var(--mono-font)', fontSize:'11px', color:active?'var(--teal-bright)':'var(--vellum-dim)', letterSpacing:'0.04em', marginBottom:'-1px', transition:'all 0.1s', touchAction:'manipulation' }}>
               {tab.label}
               {badge && <span style={{ display:'inline-flex', alignItems:'center', justifyContent:'center', minWidth:'16px', height:'16px', padding:'0 4px', background:active?'var(--teal)':'var(--surface-raised)', borderRadius:'8px', fontFamily:'var(--mono-font)', fontSize:'9px', color:active?'var(--vellum)':'var(--vellum-dim)' }}>{badge}</span>}
             </button>
           )
         })}
-      </div>
+      </nav>
       <div style={{ flex:1, overflowY:'auto', padding:'24px' }}>
+        {activeTab === 'session' && <SessionPanel state={state} auditTrail={auditTrail} onNavigate={setActiveTab} />}
+        {activeTab === 'modes' && <ModesPanel state={state} onChange={onChange} />}
         {activeTab === 'format'       && <FormatPanel     state={state} onChange={onChange} />}
         {activeTab === 'governance'   && <EscalationPanel state={state} onChange={onChange} />}
         {activeTab === 'questions'    && <QuestionsPanel  state={state} onChange={onChange} />}
