@@ -1,0 +1,241 @@
+{
+  "schemaVersion": 1,
+  "kind": "stele-project-observations",
+  "projects": [
+    {
+      "projectId": "directive-remixer",
+      "repository": "mazze93/stele",
+      "commit": "d09f8f2a240ffb37aa9518273345699ecc2f6509",
+      "observedAt": "2026-11-16T23:45:23.706320+00:00",
+      "description": "STELE — egregore compiler and integrity telemetry. Posture: GUARDIAN.",
+      "language": "TypeScript",
+      "sources": [
+        {
+          "path": "README.md",
+          "gitBlob": "563dd64085cb1700aa6668ab3e442e500cc77b3f",
+          "url": "https://github.com/mazze93/stele/blob/d09f8f2a240ffb37aa9518273345699ecc2f6509/README.md"
+        },
+        {
+          "path": "CLAUDE.md",
+          "gitBlob": "5401a13ee52377cfbf06aec0b751e1b669c8d851",
+          "url": "https://github.com/mazze93/stele/blob/d09f8f2a240ffb37aa9518273345699ecc2f6509/CLAUDE.md"
+        },
+        {
+          "path": "AGENTS.md",
+          "gitBlob": "681311eb9cf453d0faddf3aacaec7357e97ba8e9",
+          "url": "https://github.com/mazze93/stele/blob/d09f8f2a240ffb37aa9518273345699ecc2f6509/AGENTS.md"
+        },
+        {
+          "path": "package.json",
+          "gitBlob": "24dbbba08ea0109efe8f0a131af9a0a3620a8ec7",
+          "url": "https://github.com/mazze93/stele/blob/d09f8f2a240ffb37aa9518273345699ecc2f6509/package.json"
+        }
+      ]
+    },
+    {
+      "projectId": "stratum",
+      "repository": "mazze93/stratum",
+      "commit": "b840caf7170e35a0b7beff280370c53db91dcd6b",
+      "observedAt": "2026-11-16T23:45:25.068105+00:00",
+      "description": "Epistemic decision ledger: append-only event log with evidence-gated trust, deterministic Tessera projection, and a human control room. TypeScript + Cloudflare Workers.",
+      "language": "TypeScript",
+      "sources": [
+        {
+          "path": "README.md",
+          "gitBlob": "f429f78490fb53e7493d0662de5cd6802db69ec4",
+          "url": "https://github.com/mazze93/stratum/blob/b840caf7170e35a0b7beff280370c53db91dcd6b/README.md"
+        },
+        {
+          "path": "CLAUDE.md",
+          "gitBlob": "6b8e18d206665fc7e64deb30e0ad9b06073a6fca",
+          "url": "https://github.com/mazze93/stratum/blob/b840caf7170e35a0b7beff280370c53db91dcd6b/CLAUDE.md"
+        },
+        {
+          "path": "AGENTS.md",
+          "gitBlob": "681311eb9cf453d0faddf3aacaec7357e97ba8e9",
+          "url": "https://github.com/mazze93/stratum/blob/b840caf7170e35a0b7beff280370c53db91dcd6b/AGENTS.md"
+        },
+        {
+          "path": "package.json",
+          "gitBlob": "d5454ec4f94efd0f97d582fe271861ca178985cd",
+          "url": "https://github.com/mazze93/stratum/blob/b840caf7170e35a0b7beff280370c53db91dcd6b/package.json"
+        }
+      ]
+    },
+    {
+      "projectId": "aletheia",
+      "repository": "mazze93/aletheia",
+      "commit": "4fb3108938ae099ea5410ed72c7ed5441ae63c62",
+      "observedAt": "2026-11-16T23:45:26.689064+00:00",
+      "description": "Prompt-injection detection agent for Claude. Tracks content provenance and flags untrusted sources supplying governing parameters. Born from a live incident.",
+      "language": "Python",
+      "sources": [
+        {
+          "path": "README.md",
+          "gitBlob": "8ccb6073df06a96b47327f645bd9bfbf74a3d8c2",
+          "url": "https://github.com/mazze93/aletheia/blob/4fb3108938ae099ea5410ed72c7ed5441ae63c62/README.md"
+        },
+        {
+          "path": "CLAUDE.md",
+          "gitBlob": "b6858b427f3d44e34371c9bc7b15c2a9ca3b1335",
+          "url": "https://github.com/mazze93/aletheia/blob/4fb3108938ae099ea5410ed72c7ed5441ae63c62/CLAUDE.md"
+        },
+        {
+          "path": "pyproject.toml",
+          "gitBlob": "9accb84d483f3e9a4c6b78c364992fad886c1e69",
+          "url": "https://github.com/mazze93/aletheia/blob/4fb3108938ae099ea5410ed72c7ed5441ae63c62/pyproject.toml"
+        }
+      ]
+    },
+    {
+      "projectId": "apatea",
+      "repository": "mazze93/apatea",
+      "commit": "d8beb918f82af5b6f6842a754eb94642d93139ed",
+      "observedAt": "2026-11-16T23:45:28.049772+00:00",
+      "description": "Adversarial invariant-search runner. The complement to aletheia: she is a gate that fails open; this is a runner that fails loud.",
+      "language": "Python",
+      "sources": [
+        {
+          "path": "README.md",
+          "gitBlob": "d2524c9af2d27b841536ca72e48634e8fdac5a75",
+          "url": "https://github.com/mazze93/apatea/blob/d8beb918f82af5b6f6842a754eb94642d93139ed/README.md"
+        },
+        {
+          "path": "pyproject.toml",
+          "gitBlob": "b3ee0ecd200a00b4cd3059360cb3ab055024c9db",
+          "url": "https://github.com/mazze93/apatea/blob/d8beb918f82af5b6f6842a754eb94642d93139ed/pyproject.toml"
+        }
+      ]
+    },
+    {
+      "projectId": "temenos",
+      "repository": "mazze93/temenos",
+      "commit": "eb145c013ba90cc04f958be89ec95f1a0cb8e9ce",
+      "observedAt": "2026-11-16T23:45:29.249842+00:00",
+      "description": "Temenos — an evidence-gated runtime for autonomous agents. Binds aletheia (gate), apatea (adversary), stratum (ledger), stele (harness), and adaptive-response (structured output) into one auditable control plane.",
+      "language": "Python",
+      "sources": [
+        {
+          "path": "README.md",
+          "gitBlob": "df703208f1dbe63c42bee8d0a60d3a467cd15d99",
+          "url": "https://github.com/mazze93/temenos/blob/eb145c013ba90cc04f958be89ec95f1a0cb8e9ce/README.md"
+        },
+        {
+          "path": "pyproject.toml",
+          "gitBlob": "e56a358f31e52e839291576f3e47b59b6bacb6f5",
+          "url": "https://github.com/mazze93/temenos/blob/eb145c013ba90cc04f958be89ec95f1a0cb8e9ce/pyproject.toml"
+        }
+      ]
+    },
+    {
+      "projectId": "adaptive-response",
+      "repository": "mazze93/adaptive-response",
+      "commit": "094f3741f718fcc7d081bf78a6f10e7f53fd04a8",
+      "observedAt": "2026-11-16T23:45:30.430256+00:00",
+      "description": "Schema-driven AI response engine — Cloudflare Worker + Anthropic + Zod + React",
+      "language": "TypeScript",
+      "sources": [
+        {
+          "path": "README.md",
+          "gitBlob": "7ccc497353e9035c3d6daa299d3bfcb1ff1408b3",
+          "url": "https://github.com/mazze93/adaptive-response/blob/094f3741f718fcc7d081bf78a6f10e7f53fd04a8/README.md"
+        },
+        {
+          "path": "CLAUDE.md",
+          "gitBlob": "5728f9b81ef19b787d6af0b2127a2fe4858d38d3",
+          "url": "https://github.com/mazze93/adaptive-response/blob/094f3741f718fcc7d081bf78a6f10e7f53fd04a8/CLAUDE.md"
+        },
+        {
+          "path": "package.json",
+          "gitBlob": "c66e7b78e6f3c501116a58bcd995b27292b77e11",
+          "url": "https://github.com/mazze93/adaptive-response/blob/094f3741f718fcc7d081bf78a6f10e7f53fd04a8/package.json"
+        }
+      ]
+    },
+    {
+      "projectId": "context-synapse",
+      "repository": "mazze93/context-synapse",
+      "commit": "91d8b8995ef7dfef52d5ef8e78e93503a7332d60",
+      "observedAt": "2026-11-16T23:45:31.618991+00:00",
+      "description": "Local-first Bayesian prompt engine for human-AI context negotiation — Swift, no remote transmission",
+      "language": "Swift",
+      "sources": [
+        {
+          "path": "README.md",
+          "gitBlob": "31a5a3a6c6e2a87cf8a117338bc5c3e951ef8790",
+          "url": "https://github.com/mazze93/context-synapse/blob/91d8b8995ef7dfef52d5ef8e78e93503a7332d60/README.md"
+        },
+        {
+          "path": "CLAUDE.md",
+          "gitBlob": "d26441aeed1c5dca42b868bfef478d2e0b7165fd",
+          "url": "https://github.com/mazze93/context-synapse/blob/91d8b8995ef7dfef52d5ef8e78e93503a7332d60/CLAUDE.md"
+        },
+        {
+          "path": "AGENTS.md",
+          "gitBlob": "ddbc6f01d34481b6164df575204ac570432afea7",
+          "url": "https://github.com/mazze93/context-synapse/blob/91d8b8995ef7dfef52d5ef8e78e93503a7332d60/AGENTS.md"
+        },
+        {
+          "path": "Package.swift",
+          "gitBlob": "d20532f20447ec3025d376a10b48999dcbd6da1f",
+          "url": "https://github.com/mazze93/context-synapse/blob/91d8b8995ef7dfef52d5ef8e78e93503a7332d60/Package.swift"
+        }
+      ]
+    },
+    {
+      "projectId": "mazzeleczzare",
+      "repository": "mazze93/mazze-leczzare-blog",
+      "commit": "9599379015b07e1a8096f2395c2c2416cc1647c4",
+      "observedAt": "2026-11-16T23:45:32.646151+00:00",
+      "description": "Personal editorial platform for essays, privacy writing, and security-forward design. Built with Astro + Cloudflare Pages.",
+      "language": "HTML",
+      "sources": [
+        {
+          "path": "README.md",
+          "gitBlob": "f35adbc602dd3559d1c2ac6306298ad5d1677766",
+          "url": "https://github.com/mazze93/mazze-leczzare-blog/blob/9599379015b07e1a8096f2395c2c2416cc1647c4/README.md"
+        },
+        {
+          "path": "CLAUDE.md",
+          "gitBlob": "2e749b366162a0e797bd35f2b29c184f73edb6c3",
+          "url": "https://github.com/mazze93/mazze-leczzare-blog/blob/9599379015b07e1a8096f2395c2c2416cc1647c4/CLAUDE.md"
+        },
+        {
+          "path": "AGENTS.md",
+          "gitBlob": "5026615353ed80aa70e55bb49886f9851f82d725",
+          "url": "https://github.com/mazze93/mazze-leczzare-blog/blob/9599379015b07e1a8096f2395c2c2416cc1647c4/AGENTS.md"
+        },
+        {
+          "path": "package.json",
+          "gitBlob": "a5b55a9e516c85170512630dabea9c1e0da13112",
+          "url": "https://github.com/mazze93/mazze-leczzare-blog/blob/9599379015b07e1a8096f2395c2c2416cc1647c4/package.json"
+        }
+      ]
+    },
+    {
+      "projectId": "secure-pride",
+      "repository": "mazze93/secure-pride",
+      "commit": "4a69ea5287800036a4c71c6ed8a63501e62cde40",
+      "observedAt": "2026-11-16T23:45:34.562343+00:00",
+      "description": "Privacy-first cybersecurity tools and standards for LGBTQ+ communities and high-risk groups, built for adversarial threat models where exposure has real consequences.",
+      "language": "TypeScript",
+      "sources": [
+        {
+          "path": "README.md",
+          "gitBlob": "4dcf8296b92cefe801d25039c0ec14d66e1e517b",
+          "url": "https://github.com/mazze93/secure-pride/blob/4a69ea5287800036a4c71c6ed8a63501e62cde40/README.md"
+        },
+        {
+          "path": "CLAUDE.md",
+          "gitBlob": "67b1b5a503abb645b664cfd22d25ecd6b70ef584",
+          "url": "https://github.com/mazze93/secure-pride/blob/4a69ea5287800036a4c71c6ed8a63501e62cde40/CLAUDE.md"
+        },
+        {
+          "path": "package.json",
+          "gitBlob": "98e672e373a9f728269331bb6c9ddb23d7397b9c",
+          "url": "https://github.com/mazze93/secure-pride/blob/4a69ea5287800036a4c71c6ed8a63501e62cde40/package.json"
+        }
+      ]
+    }
+  ]
+}

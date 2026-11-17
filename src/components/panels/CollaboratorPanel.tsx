@@ -1,3 +1,4 @@
+import { ProjectObservationPanel } from './ProjectObservationPanel'
 import { useState } from 'react'
 import type { DirectiveState } from '@/lib/types'
 import type { IntegrityState } from '@/lib/integrity'
@@ -30,7 +31,18 @@ type Props = {
   onAuditEntry:     (action: AuditAction, extras?: AuditExtras) => void
 }
 
-export function CollaboratorPanel({
+export function CollaboratorPanel(props: Props) {
+  return <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+    <ProjectObservationPanel state={props.state} onGateResult={props.onGateResult} onApply={(projectId, narrative) => {
+      props.onApplyNarrative(projectId, narrative)
+      props.onAuditEntry('tsugi-applied', { fieldsExtracted: ['identity'] })
+    }} />
+    <h3 style={sHead}>Optional model-assisted narrative</h3>
+    <ModelCollaboratorPanel {...props} />
+  </div>
+}
+
+function ModelCollaboratorPanel({
   state, integrityState, apiKey, onSetApiKey, onGateResult, onApplyNarrative, onAuditEntry,
 }: Props) {
   const activeProjects = PROJECTS.filter(p => state.activeProjectIds.includes(p.id))
@@ -112,6 +124,7 @@ export function CollaboratorPanel({
       compliance:    selectedProject.compliance,
       tesserae:      (selectedProject.tesserae ?? []).map(t => ({ module: t.module, missingHalf: t.missingHalf, group: t.group })),
       openQuestions: selectedProject.openQuestions,
+      observation: selectedProject.observation,
     })
 
     const result = gate(serialized)
@@ -133,6 +146,7 @@ export function CollaboratorPanel({
       hardStops:     selectedProject.hardStops,
       tesserae:      (selectedProject.tesserae ?? []).map(t => ({ module: t.module, missingHalf: t.missingHalf, group: t.group })),
       openQuestions: selectedProject.openQuestions,
+      observation: selectedProject.observation,
     }
 
     try {
@@ -158,6 +172,13 @@ export function CollaboratorPanel({
       philosophy:          fields.philosophy,
       buildSequencing:     fields.buildSequencing,
       unstatedConstraints: fields.unstatedConstraints,
+    }
+    const result = gate(JSON.stringify(narrative))
+    setGateResult(result)
+    onGateResult(result)
+    if (result.blocked) {
+      setStatus('blocked')
+      return
     }
     onApplyNarrative(selectedId, narrative)
     onAuditEntry('tsugi-applied', { fieldsExtracted: ['identity', 'philosophy', 'buildSequencing', 'unstatedConstraints'] })

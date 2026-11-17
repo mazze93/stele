@@ -1,3 +1,4 @@
+import type { ProjectObservation } from './project-observations'
 import type { Project, Tessera, DirectiveState } from '@/lib/types'
 import type { IntegrityState } from '@/lib/integrity'
 import { INTEGRITY_STATES } from '@/lib/integrity'
@@ -19,6 +20,7 @@ export type ConfoundsBlock = {
 }
 
 export type ProjectNarrativeExport = {
+  catalogObservation?: ProjectObservation
   steleVersion:   string
   exportedAt:     string
   projectId:      string
@@ -107,6 +109,7 @@ export function buildProjectNarrativeExport(
     }))
 
   return {
+    catalogObservation: project.observation,
     steleVersion:   STELE_VERSION,
     exportedAt:     new Date().toISOString(),
     projectId:      project.id,

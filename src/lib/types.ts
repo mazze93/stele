@@ -1,3 +1,4 @@
+import type { ProjectObservation } from './project-observations'
 // === STELE TYPE SYSTEM ===
 // All types for the directive compiler and integrity telemetry tool.
 // The lexicon is load-bearing — see CLAUDE.md for vocabulary constraints.
@@ -36,6 +37,7 @@ export type Project = {
   openQuestions: string[]
   tesserae: Tessera[]            // unjoined implementations
   root: string
+  observation?: ProjectObservation
   // Narrative fields — AI-authored via CollaboratorPanel, developer-reviewed
   // These are the fields developers can't easily articulate from inside the work
   identity?: string              // what this thing is philosophically
